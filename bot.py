@@ -14,7 +14,7 @@ API_URL = os.getenv("API_URL")
 
 class DiscordBot:
     def __init__(self):
-        self.bot = commands.Bot(command_prefix=None, intents=discord.Intents.default())
+        self.bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
         self.setup_events()
         self.setup_commands()
         self.setup_context_menu()
@@ -89,7 +89,7 @@ class DiscordBot:
                         async with session.post(f"{API_URL}/api/DictQuery/", json=query_data) as response:
                             if response.status == 200:
                                 data = await response.json()
-                                link: str = data["result"] if "result" in data else "找不到連結"
+                                link: str = data["result"]
                                 results.append(f"📚 **{word}**: {link}")
                             else:
                                 results.append(f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}")
@@ -134,9 +134,18 @@ class DiscordBot:
                         async with session.post(f"{API_URL}/api/UsageQuery/URL/", json=query_data) as response:
                             if response.status == 200:
                                 data = await response.json()
-                                links: list = data["result"] if "result" in data else "找不到連結"
-                                # TODO: Need to enhance the output format and return the word to the corrsponding link in api
-                                results.append(f'📚 **{word}**: {", ".join(links)}')
+                                if data["status"] == 200:
+                                    items: list = data["result"]
+                                    if len(items) == 1:
+                                        results.append(f'📚 **{items[0]["word"]}**: {items[0]["url"]}')
+                                    elif len(items) > 1:
+                                        results.append(f"📚 **{word}**:")
+                                        for item in items:
+                                            results.append(f'- {item["word"]}: {item["url"]}')
+                                elif data["status"] == 404:
+                                    results.append(f"❌ **{word}**: 找不到用法")
+                                else:
+                                    results.append(f"❌ **{word}**: 查詢失敗\n錯誤訊息: {data['error']}")
                             else:
                                 results.append(f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}")
                     except Exception as e:
