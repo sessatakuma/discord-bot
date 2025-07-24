@@ -1,15 +1,19 @@
+from typing import Literal
+
 import aiohttp
+from discord import Interaction
 
 from config.settings import API_URL
 
 
-async def fetch_dict_link(interaction, words):
+async def fetch_dict_link(interaction: Interaction, words: str):
     # Remove extra spaces and split by spaces or commas
     word_list = [word.strip() for word in words.replace(",", " ").split() if word.strip()]
     if not word_list:
         await interaction.response.send_message("❌ 請提供有效的單字！", ephemeral=True)
         return
     await interaction.response.defer()
+
     results = []
     try:
         async with aiohttp.ClientSession() as session:
@@ -20,7 +24,7 @@ async def fetch_dict_link(interaction, words):
                         if response.status == 200:
                             data = await response.json()
                             link: str = data["result"]
-                            results.append(f"\U0001f4da **{word}**: {link}")
+                            results.append(f"📚 **{word}**: {link}")
                         else:
                             results.append(f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}")
                 except Exception as e:
@@ -38,7 +42,7 @@ async def fetch_dict_link(interaction, words):
         print(f"dict_query general error: {e}")
 
 
-async def fetch_usage(interaction, words, site):
+async def fetch_usage(interaction: Interaction, words: str, site: Literal["NLB", "NLT"]):
     word_list = [word.strip() for word in words.replace(",", " ").split() if word.strip()]
     if not word_list:
         await interaction.response.send_message("❌ 請提供有效的單字！", ephemeral=True)
@@ -56,9 +60,9 @@ async def fetch_usage(interaction, words, site):
                             if data["status"] == 200:
                                 items: list = data["result"]
                                 if len(items) == 1:
-                                    results.append(f'\U0001f4da **{items[0]["word"]}**: {items[0]["url"]}')
+                                    results.append(f'📚 **{items[0]["word"]}**: {items[0]["url"]}')
                                 elif len(items) > 1:
-                                    results.append(f"\U0001f4da **{word}**:")
+                                    results.append(f"📚 **{word}**:")
                                     for item in items:
                                         results.append(f'- {item["word"]}: {item["url"]}')
                             elif data["status"] == 404:
