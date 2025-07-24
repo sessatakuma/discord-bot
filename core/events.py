@@ -1,4 +1,7 @@
-def setup_events(bot):
+from discord.ext import commands
+
+
+def setup_events(bot: commands.Bot):
     @bot.event
     async def setup_hook():
         """Load cogs when bot is ready"""

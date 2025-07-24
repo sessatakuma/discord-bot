@@ -19,5 +19,5 @@ async def dict_query_handler(interaction, words):
     await fetch_dict_link(interaction, words)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(DictQueryCog(bot))

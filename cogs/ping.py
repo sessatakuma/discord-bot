@@ -11,5 +11,5 @@ class PingCog(commands.Cog):
         await interaction.response.send_message("🏓 pong!")
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(PingCog(bot))

@@ -23,5 +23,5 @@ class UsageQueryCog(commands.Cog):
         await fetch_usage(interaction, word, site)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(UsageQueryCog(bot))
