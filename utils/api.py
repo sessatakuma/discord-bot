@@ -32,7 +32,7 @@ async def fetch_dict_link(interaction: Interaction, words: str):
 
     try:
         async with aiohttp.ClientSession() as session:
-            # 併發處理所有單字
+            # Process all words concurrently
             tasks = [query_single_word(session, word) for word in word_list]
             results = await asyncio.gather(*tasks)
 
@@ -83,7 +83,7 @@ async def fetch_usage(interaction: Interaction, words: str, site: Literal["NLB",
 
     try:
         async with aiohttp.ClientSession() as session:
-            # 併發處理所有單字
+            # Process all words concurrently
             tasks = [query_single_usage(session, word) for word in word_list]
             results = await asyncio.gather(*tasks)
 
