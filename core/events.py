@@ -1,14 +1,24 @@
 from discord.ext import commands
 
+from config.settings import COGS
+
 
 def setup_events(bot: commands.Bot):
     @bot.event
     async def setup_hook():
         """Load cogs when bot is ready"""
-        await bot.load_extension("cogs.dict_query")
-        await bot.load_extension("cogs.usage_query")
-        await bot.load_extension("cogs.ping")
-        print("✅ All cogs loaded successfully")
+        failed_cogs = []
+        for cog_name in COGS:
+            try:
+                await bot.load_extension(cog_name)
+            except Exception as e:
+                print(f"❌ Failed to load {cog_name}: {e}")
+                failed_cogs.append(cog_name)
+
+        if not failed_cogs:
+            print("✅ All cogs loaded successfully")
+        else:
+            print(f"⚠️ {len(failed_cogs)} cog(s) failed to load")
 
     @bot.event
     async def on_ready():
