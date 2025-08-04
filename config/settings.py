@@ -11,4 +11,6 @@ COGS = [
     "cogs.dict_query",
     "cogs.usage_query",
     "cogs.control",
+    "cogs.mark_accent",
+    "cogs.mark_furigana",
 ]
