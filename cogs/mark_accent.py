@@ -20,4 +20,4 @@ async def setup(bot: commands.Bot):
 
 
 async def mark_accent(interaction: Interaction, text: str):
-    await interaction.response.send_message("天気(1)がいい(1)から、散歩(0)し(2)ましょ(2)う", ephemeral=True)
+    await interaction.response.send_message("天気(1)がいい(1)から、散歩(0)し(2)ましょ(2)う。")
