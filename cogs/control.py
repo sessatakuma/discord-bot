@@ -3,19 +3,19 @@ import asyncio
 from discord import Interaction, app_commands
 from discord.ext import commands
 
-from config.settings import COGS
+from config.settings import COGS, RoleId
 
 
 class ControlCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot: commands.Bot = bot
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
 
     @app_commands.command(name="ping", description="測試機器人是否正常運作")
     async def ping(self, interaction: Interaction):
         await interaction.response.send_message("🏓 pong!")
 
     @app_commands.command(name="reload", description="Hot reload all Cog modules")
-    @app_commands.checks.has_role(1377276760466391112)
+    @app_commands.checks.has_role(RoleId.tech.value)
     async def reload_all_cogs(self, interaction: Interaction):
         """Hot reload all cogs"""
         await interaction.response.defer()
