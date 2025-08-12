@@ -31,4 +31,5 @@ COGS = [
     "cogs.control",
     "cogs.mark_accent",
     "cogs.mark_furigana",
+    "cogs.event_reminder",
 ]
