@@ -27,32 +27,33 @@ class EventReminder(commands.Cog):
         self.bot = bot
         self.scheduled_events: list[discord.ScheduledEvent] = []
         self.reminder_tasks: list[asyncio.Task] = []
-        self.lock = asyncio.Lock()
-        self.updating_events = False
+        self.update_events_lock = asyncio.Lock()
 
     async def update_events(self):
-        async with self.lock:
-            self.updating_events = True
-            guild = self.bot.get_guild(GUILD_ID)
-            if guild is None:
+        guild = self.bot.get_guild(GUILD_ID)
+        if guild is None:
+            return
+
+        async with self.update_events_lock:
+            try:
+                events = await guild.fetch_scheduled_events()
+            except Exception as e:
+                print(f"Failed to fetch scheduled events: {e}")
                 return
 
-            # Cancel all existing tasks
+            # Clear existing scheduled events and tasks
             for task in self.reminder_tasks:
                 if not task.done():
                     task.cancel()
             self.reminder_tasks.clear()
             self.scheduled_events.clear()
 
-            events = await guild.fetch_scheduled_events()
             for event in events:
                 if event.status != discord.EventStatus.scheduled:
                     continue
-                role_name = get_role_name(event.channel.name)
-                if not role_name:
+                if not (role_name := get_role_name(event.channel.name)):
                     continue
-                channel = guild.get_channel(GeneralChannelId[role_name].value)
-                if not channel:
+                if not (channel := guild.get_channel(GeneralChannelId[role_name].value)):
                     continue
                 self.reminder_tasks.append(
                     self.bot.loop.create_task(self.event_reminder(event, channel, RoleId[role_name].value))
@@ -61,7 +62,6 @@ class EventReminder(commands.Cog):
             self.scheduled_events = sorted(self.scheduled_events, key=lambda e: e.start_time)
 
             print(f"📅 Scheduled events: {[event.name for event in self.scheduled_events]}")
-            self.updating_events = False
 
     async def event_reminder(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
         start_time = event.start_time
@@ -95,7 +95,7 @@ class EventReminder(commands.Cog):
     # /reminder list
     @reminder.command(name="list", description="查詢已排程提醒的活動")
     async def reminder_list(self, interaction: discord.Interaction):
-        if self.updating_events:
+        if self.update_events_lock.locked():
             await interaction.response.send_message("正在更新活動列表，請稍後再試。", ephemeral=True)
             return
         if not self.scheduled_events:
