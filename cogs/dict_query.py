@@ -7,6 +7,10 @@ from discord.ext import commands
 from config.settings import API_URL
 
 
+async def dict_query_handler(interaction, words):
+    await fetch_dict_link(interaction, words)
+
+
 class DictQueryCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -16,10 +20,6 @@ class DictQueryCog(commands.Cog):
     @app_commands.rename(word="單字")
     async def dict_query(self, interaction: Interaction, word: str):
         await fetch_dict_link(interaction, word)
-
-
-async def dict_query_handler(interaction, words):
-    await fetch_dict_link(interaction, words)
 
 
 async def setup(bot: commands.Bot):
