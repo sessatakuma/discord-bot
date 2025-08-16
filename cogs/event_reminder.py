@@ -23,7 +23,7 @@ class EventReminder(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.scheduled_events = {}  # event_id: (event_name, event_start_time)
+        self.scheduled_events: list[discord.ScheduledEvent] = []
         self.event_scheduler.start()
 
     def cog_unload(self):
@@ -37,7 +37,7 @@ class EventReminder(commands.Cog):
         events = await guild.fetch_scheduled_events()
         events = sorted(events, key=lambda e: e.start_time)
         for event in events:
-            if event.id in self.scheduled_events:
+            if event in self.scheduled_events:
                 continue
             if event.status != discord.EventStatus.scheduled:
                 continue
@@ -47,7 +47,7 @@ class EventReminder(commands.Cog):
             if not channel:
                 continue
             self.bot.loop.create_task(self.schedule_reminders(event, channel, role_id))
-            self.scheduled_events[event.id] = (event.name, event.start_time.astimezone(timezone.utc), role_id)
+            self.scheduled_events.append(event)
 
         print(f"Scheduled events: {len(self.scheduled_events)}")
 
@@ -57,7 +57,7 @@ class EventReminder(commands.Cog):
 
     async def schedule_reminders(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
         now = datetime.now(timezone.utc)
-        start_time = event.start_time.astimezone(timezone.utc)
+        start_time = event.start_time
         timestamp = int(start_time.timestamp())
         remind_6h = start_time - timedelta(hours=6)
         remind_1h = start_time - timedelta(hours=1)
@@ -85,18 +85,17 @@ class EventReminder(commands.Cog):
             await channel.send(f"<@&{role_id}>「{event.name}」現在開始！")
 
     # /reminder list
-    # TODO: 只列出跟user有關的event
     @reminder.command(name="list", description="查詢已排程提醒的活動")
     async def reminder_list(self, interaction: discord.Interaction):
         if not self.scheduled_events:
             await interaction.response.send_message("目前尚未有任何活動被加入提醒。", ephemeral=True)
             return
         lines = []
-        for name, start_time, role_id in self.scheduled_events.values():
+        for event in self.scheduled_events:
             # Check if user has the role for this event
-            if role_id not in [role.id for role in interaction.user.roles]:
+            if not event.channel.permissions_for(interaction.user).read_messages:
                 continue
-            lines.append(f"• {name} (開始於: <t:{int(start_time.timestamp())}:F>)")
+            lines.append(f"• {event.name} (開始於: <t:{int(event.start_time.timestamp())}:F>)")
         msg = "已排程提醒的活動：\n" + "\n".join(lines)
         await interaction.response.send_message(msg, ephemeral=True)
 
