@@ -47,7 +47,7 @@ class EventReminder(commands.Cog):
             if not channel:
                 continue
             self.bot.loop.create_task(self.schedule_reminders(event, channel, role_id))
-            self.scheduled_events[event.id] = (event.name, event.start_time.astimezone(timezone.utc))
+            self.scheduled_events[event.id] = (event.name, event.start_time.astimezone(timezone.utc), role_id)
 
         print(f"Scheduled events: {len(self.scheduled_events)}")
 
@@ -92,7 +92,10 @@ class EventReminder(commands.Cog):
             await interaction.response.send_message("目前尚未有任何活動被加入提醒。", ephemeral=True)
             return
         lines = []
-        for eid, (name, start_time) in self.scheduled_events.items():
+        for name, start_time, role_id in self.scheduled_events.values():
+            # Check if user has the role for this event
+            if role_id not in [role.id for role in interaction.user.roles]:
+                continue
             lines.append(f"• {name} (開始於: <t:{int(start_time.timestamp())}:F>)")
         msg = "已排程提醒的活動：\n" + "\n".join(lines)
         await interaction.response.send_message(msg, ephemeral=True)

@@ -12,7 +12,7 @@ class ControlCog(commands.Cog):
 
     @app_commands.command(name="ping", description="測試機器人是否正常運作")
     async def ping(self, interaction: Interaction):
-        await interaction.response.send_message("🏓 pong!")
+        await interaction.response.send_message("🏓 pong!", ephemeral=True)
 
     @app_commands.command(name="reload", description="Hot reload all Cog modules")
     @app_commands.checks.has_role(RoleId.tech.value)
