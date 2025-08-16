@@ -17,7 +17,7 @@ class RoleId(Enum):
     content = 1377276456953974896
 
 
-class ChannelId(Enum):
+class GeneralChannelId(Enum):
     staff = 1366969424892006541
     design = 1372167584249679933
     tech = 1377276305413898312

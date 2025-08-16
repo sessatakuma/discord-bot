@@ -1,21 +1,23 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import discord
 from discord import app_commands
-from discord.ext import commands, tasks
+from discord.ext import commands
 
-from config.settings import GUILD_ID, ChannelId, RoleId
+from config.settings import GUILD_ID, GeneralChannelId, RoleId
 
 
-def get_role_name(event_name: str) -> str:
-    if "デザイン" in event_name:
-        return "design"
-    elif "テック" in event_name:
-        return "tech"
-    elif "コンテンツ" in event_name:
-        return "content"
-    else:
+def get_role_name(channel_name: str) -> str:
+    if "🗿" in channel_name:
         return "staff"
+    elif "🎨" in channel_name:
+        return "design"
+    elif "💻" in channel_name:
+        return "tech"
+    elif "🏫" in channel_name:
+        return "content"
+    return None
 
 
 class EventReminder(commands.Cog):
@@ -24,58 +26,61 @@ class EventReminder(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.scheduled_events: list[discord.ScheduledEvent] = []
-        self.event_scheduler.start()
+        self.reminder_tasks: list[asyncio.Task] = []
+        self.lock = asyncio.Lock()
 
-    def cog_unload(self):
-        self.event_scheduler.cancel()
+    async def update_events(self):
+        async with self.lock:
+            guild = self.bot.get_guild(GUILD_ID)
+            if guild is None:
+                return
 
-    @tasks.loop(hours=1)
-    async def event_scheduler(self):
-        guild = self.bot.get_guild(GUILD_ID)
-        if guild is None:
-            return
-        events = await guild.fetch_scheduled_events()
-        events = sorted(events, key=lambda e: e.start_time)
-        for event in events:
-            if event in self.scheduled_events:
-                continue
-            if event.status != discord.EventStatus.scheduled:
-                continue
-            role_name = get_role_name(event.name)
-            role_id = RoleId[role_name].value
-            channel = guild.get_channel(ChannelId[role_name].value)
-            if not channel:
-                continue
-            self.bot.loop.create_task(self.schedule_reminders(event, channel, role_id))
-            self.scheduled_events.append(event)
+            # Cancel all existing tasks
+            for task in self.reminder_tasks:
+                if not task.done():
+                    task.cancel()
+            self.reminder_tasks.clear()
+            self.scheduled_events.clear()
 
-        print(f"Scheduled events: {len(self.scheduled_events)}")
+            events = await guild.fetch_scheduled_events()
+            for event in events:
+                if event.status != discord.EventStatus.scheduled:
+                    continue
+                role_name = get_role_name(event.channel.name)
+                if not role_name:
+                    continue
+                channel = guild.get_channel(GeneralChannelId[role_name].value)
+                if not channel:
+                    continue
+                self.reminder_tasks.append(
+                    self.bot.loop.create_task(self.event_reminder(event, channel, RoleId[role_name].value))
+                )
+                self.scheduled_events.append(event)
+            self.scheduled_events = sorted(self.scheduled_events, key=lambda e: e.start_time)
 
-    @event_scheduler.before_loop
-    async def before_event_scheduler(self):
-        await self.bot.wait_until_ready()
+            print(f"📅 Scheduled events: {[event.name for event in self.scheduled_events]}")
 
-    async def schedule_reminders(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
-        now = datetime.now(timezone.utc)
+    async def event_reminder(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
         start_time = event.start_time
         timestamp = int(start_time.timestamp())
         remind_6h = start_time - timedelta(hours=6)
         remind_1h = start_time - timedelta(hours=1)
 
         # Remind 6 hours before the event
+        now = datetime.now(timezone.utc)
         wait_6h = (remind_6h - now).total_seconds()
         if wait_6h > 0:
             await discord.utils.sleep_until(remind_6h)
-            await channel.send(f"「{event.name}」還有 6 小時，請先準備好開會大綱！\n開始時間: <t:{timestamp}:t>")
+            await channel.send(
+                f"<@&{role_id}>「{event.name}」還有 6 小時，請先準備好開會大綱！ 開始時間: <t:{timestamp}:t>"
+            )
 
         # Remind 1 hour before the event
         now = datetime.now(timezone.utc)
         wait_1h = (remind_1h - now).total_seconds()
         if wait_1h > 0:
             await discord.utils.sleep_until(remind_1h)
-            await channel.send(
-                f"<@&{role_id}>「{event.name}」還有 1 小時，準備要開會囉！\n開始時間: <t:{timestamp}:t>"
-            )
+            await channel.send(f"<@&{role_id}>「{event.name}」還有 1 小時，準備要開會囉！ 開始時間: <t:{timestamp}:t>")
 
         # Remind at the start of the event
         now = datetime.now(timezone.utc)
