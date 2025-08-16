@@ -31,8 +31,8 @@ class EventReminder(commands.Cog):
         self.updating_events = False
 
     async def update_events(self):
-        self.updating_events = True
         async with self.lock:
+            self.updating_events = True
             guild = self.bot.get_guild(GUILD_ID)
             if guild is None:
                 return
@@ -61,7 +61,7 @@ class EventReminder(commands.Cog):
             self.scheduled_events = sorted(self.scheduled_events, key=lambda e: e.start_time)
 
             print(f"📅 Scheduled events: {[event.name for event in self.scheduled_events]}")
-        self.updating_events = False
+            self.updating_events = False
 
     async def event_reminder(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
         start_time = event.start_time
