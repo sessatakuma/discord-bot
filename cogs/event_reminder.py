@@ -28,8 +28,10 @@ class EventReminder(commands.Cog):
         self.scheduled_events: list[discord.ScheduledEvent] = []
         self.reminder_tasks: list[asyncio.Task] = []
         self.lock = asyncio.Lock()
+        self.updating_events = False
 
     async def update_events(self):
+        self.updating_events = True
         async with self.lock:
             guild = self.bot.get_guild(GUILD_ID)
             if guild is None:
@@ -59,6 +61,7 @@ class EventReminder(commands.Cog):
             self.scheduled_events = sorted(self.scheduled_events, key=lambda e: e.start_time)
 
             print(f"📅 Scheduled events: {[event.name for event in self.scheduled_events]}")
+        self.updating_events = False
 
     async def event_reminder(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
         start_time = event.start_time
@@ -92,6 +95,9 @@ class EventReminder(commands.Cog):
     # /reminder list
     @reminder.command(name="list", description="查詢已排程提醒的活動")
     async def reminder_list(self, interaction: discord.Interaction):
+        if self.updating_events:
+            await interaction.response.send_message("正在更新活動列表，請稍後再試。", ephemeral=True)
+            return
         if not self.scheduled_events:
             await interaction.response.send_message("目前尚未有任何活動被加入提醒。", ephemeral=True)
             return
