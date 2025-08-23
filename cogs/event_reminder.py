@@ -74,23 +74,21 @@ class EventReminder(commands.Cog):
         wait_6h = (remind_6h - now).total_seconds()
         if wait_6h > 0:
             await discord.utils.sleep_until(remind_6h)
-            await channel.send(
-                f"<@&{role_id}>「{event.name}」還有 6 小時，請先準備好開會大綱！ 開始時間: <t:{timestamp}:t>"
-            )
+            await channel.send(f"<@&{role_id}>[{event.name}]({event.url})還有 6 小時，請先準備好開會大綱！]")
 
         # Remind 1 hour before the event
         now = datetime.now(timezone.utc)
         wait_1h = (remind_1h - now).total_seconds()
         if wait_1h > 0:
             await discord.utils.sleep_until(remind_1h)
-            await channel.send(f"<@&{role_id}>「{event.name}」還有 1 小時，準備要開會囉！ 開始時間: <t:{timestamp}:t>")
+            await channel.send(f"<@&{role_id}>[{event.name}]({event.url})還有 1 小時，準備要開會囉！")
 
         # Remind at the start of the event
         now = datetime.now(timezone.utc)
         wait_start = (start_time - now).total_seconds()
         if wait_start > 0:
             await discord.utils.sleep_until(start_time)
-            await channel.send(f"<@&{role_id}>「{event.name}」現在開始！")
+            await channel.send(f"<@&{role_id}>[{event.name}]({event.url})現在開始！")
 
     # /reminder list
     @reminder.command(name="list", description="查詢已排程提醒的活動")
@@ -108,6 +106,25 @@ class EventReminder(commands.Cog):
                 continue
             lines.append(f"• {event.name} (開始於: <t:{int(event.start_time.timestamp())}:F>)")
         msg = "已排程提醒的活動：\n" + "\n".join(lines)
+        await interaction.response.send_message(msg, ephemeral=True)
+
+    @reminder.command(name="today", description="查詢今天的活動")
+    async def reminder_today(self, interaction: discord.Interaction):
+        if self.update_events_lock.locked():
+            await interaction.response.send_message("正在更新活動列表，請稍後再試。", ephemeral=True)
+            return
+        today = datetime.now(timezone.utc).date()
+        today_events = [event for event in self.scheduled_events if event.start_time.date() == today]
+        if not today_events:
+            await interaction.response.send_message("今天沒有任何活動。", ephemeral=True)
+            return
+        lines = []
+        for event in today_events:
+            # Check if user has the role for this event
+            if not event.channel.permissions_for(interaction.user).read_messages:
+                continue
+            lines.append(event.url)
+        msg = "今天的活動：\n" + "\n".join(lines)
         await interaction.response.send_message(msg, ephemeral=True)
 
 
