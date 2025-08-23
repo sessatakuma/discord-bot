@@ -74,21 +74,21 @@ class EventReminder(commands.Cog):
         wait_6h = (remind_6h - now).total_seconds()
         if wait_6h > 0:
             await discord.utils.sleep_until(remind_6h)
-            await channel.send(f"<@&{role_id}>[{event.name}]({event.url})還有 6 小時，請先準備好開會大綱！]")
+            await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) 還有 6 小時，請先準備好開會大綱！]")
 
         # Remind 1 hour before the event
         now = datetime.now(timezone.utc)
         wait_1h = (remind_1h - now).total_seconds()
         if wait_1h > 0:
             await discord.utils.sleep_until(remind_1h)
-            await channel.send(f"<@&{role_id}>[{event.name}]({event.url})還有 1 小時，準備要開會囉！")
+            await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) 還有 1 小時，準備要開會囉！")
 
         # Remind at the start of the event
         now = datetime.now(timezone.utc)
         wait_start = (start_time - now).total_seconds()
         if wait_start > 0:
             await discord.utils.sleep_until(start_time)
-            await channel.send(f"<@&{role_id}>[{event.name}]({event.url})現在開始！")
+            await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) 現在開始！")
 
     # /reminder list
     @reminder.command(name="list", description="查詢已排程提醒的活動")
