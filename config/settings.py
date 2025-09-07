@@ -32,4 +32,5 @@ COGS = [
     "cogs.mark_accent",
     "cogs.mark_furigana",
     "cogs.event_reminder",
+    "cogs.meeting_reminder",
 ]
