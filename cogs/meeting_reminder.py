@@ -23,7 +23,7 @@ def is_first_day_of_last_week():
 
 
 class MeetingReminder(commands.Cog):
-    meeting_cmd = app_commands.Group(name="meeting", description="活動提醒相關指令")
+    # meeting_cmd = app_commands.Group(name="meeting", description="活動提醒相關指令")
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -48,14 +48,14 @@ class MeetingReminder(commands.Cog):
                 )
 
     # /meeting remind
-    @meeting_cmd.command(name="remind", description="提醒填寫下個月開會時間表")
-    async def meeting_remind(self, interaction: Interaction):
-        channel = self.bot.get_channel(GeneralChannelId.staff.value)
-        if channel:
-            await channel.send(f"<@&{RoleId.staff.value}> ⏰ 請尚未填寫的人填寫下個月的開會時間表，謝謝！")
-            await interaction.response.send_message("提醒訊息已發送！", ephemeral=True)
-        else:
-            await interaction.response.send_message("找不到指定頻道！", ephemeral=True)
+    # @meeting_cmd.command(name="remind", description="提醒填寫下個月開會時間表")
+    # async def meeting_remind(self, interaction: Interaction):
+    #     channel = self.bot.get_channel(GeneralChannelId.staff.value)
+    #     if channel:
+    #         await channel.send(f"<@&{RoleId.staff.value}> ⏰ 請尚未填寫的人填寫下個月的開會時間表，謝謝！")
+    #         await interaction.response.send_message("提醒訊息已發送！", ephemeral=True)
+    #     else:
+    #         await interaction.response.send_message("找不到指定頻道！", ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
