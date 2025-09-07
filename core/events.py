@@ -35,7 +35,7 @@ def setup_events(bot: commands.Bot):
         # Setup event scheduler
         event_reminder: EventReminder = bot.get_cog("EventReminder")
         if event_reminder:
-            await event_reminder.update_events()
+            await event_reminder.update()
         else:
             print("⚠️ EventReminder cog not found, skipping event scheduler setup")
 
@@ -45,16 +45,16 @@ def setup_events(bot: commands.Bot):
     async def on_scheduled_event_create(event):
         event_reminder: EventReminder = bot.get_cog("EventReminder")
         if event_reminder:
-            await event_reminder.update_events()
+            await event_reminder.update()
 
     @bot.event
     async def on_scheduled_event_update(before, after):
         event_reminder: EventReminder = bot.get_cog("EventReminder")
         if event_reminder:
-            await event_reminder.update_events()
+            await event_reminder.update()
 
     @bot.event
     async def on_scheduled_event_delete(event):
         event_reminder: EventReminder = bot.get_cog("EventReminder")
         if event_reminder:
-            await event_reminder.update_events()
+            await event_reminder.update()

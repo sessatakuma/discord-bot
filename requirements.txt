@@ -1,4 +1,4 @@
 discord.py>=2.0.0
 aiohttp
 python-dotenv
-apscheduler
+APScheduler>=3.10.4

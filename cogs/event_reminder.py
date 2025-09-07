@@ -2,6 +2,8 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 
 import discord
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
 from discord import app_commands
 from discord.ext import commands
 
@@ -21,15 +23,21 @@ def get_role_name(channel_name: str) -> str:
 
 
 class EventReminder(commands.Cog):
-    reminder = app_commands.Group(name="reminder", description="活動提醒相關指令")
+    event_cmd = app_commands.Group(name="event", description="活動提醒相關指令")
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.scheduled_events: list[discord.ScheduledEvent] = []
-        self.reminder_tasks: list[asyncio.Task] = []
+        self.scheduler = AsyncIOScheduler()
         self.update_events_lock = asyncio.Lock()
+        self.scheduler.start()
 
-    async def update_events(self):
+    def cog_unload(self):
+        """Clean up scheduler when cog is unloaded"""
+        if self.scheduler.running:
+            self.scheduler.shutdown()
+
+    async def update(self):
         guild = self.bot.get_guild(GUILD_ID)
         if guild is None:
             return
@@ -41,11 +49,8 @@ class EventReminder(commands.Cog):
                 print(f"Failed to fetch scheduled events: {e}")
                 return
 
-            # Clear existing scheduled events and tasks
-            for task in self.reminder_tasks:
-                if not task.done():
-                    task.cancel()
-            self.reminder_tasks.clear()
+            # Clear existing scheduled jobs and events
+            self.scheduler.remove_all_jobs()
             self.scheduled_events.clear()
 
             for event in events:
@@ -55,44 +60,63 @@ class EventReminder(commands.Cog):
                     continue
                 if not (channel := guild.get_channel(GeneralChannelId[role_name].value)):
                     continue
-                self.reminder_tasks.append(
-                    self.bot.loop.create_task(self.event_reminder(event, channel, RoleId[role_name].value))
-                )
-                self.scheduled_events.append(event)
-            self.scheduled_events = sorted(self.scheduled_events, key=lambda e: e.start_time)
 
+                # Schedule reminder jobs for this event
+                self._schedule_event_reminders(event, channel, RoleId[role_name].value)
+                self.scheduled_events.append(event)
+
+            self.scheduled_events = sorted(self.scheduled_events, key=lambda e: e.start_time)
             print(f"📅 Scheduled events: {[event.name for event in self.scheduled_events]}")
 
-    async def event_reminder(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
+    def _schedule_event_reminders(self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int):
+        """Schedule all reminder jobs for a single event"""
         start_time = event.start_time
-        timestamp = int(start_time.timestamp())
+        now = datetime.now(timezone.utc)
+
+        # Schedule 6-hour reminder
         remind_6h = start_time - timedelta(hours=6)
+        if remind_6h > now:
+            self.scheduler.add_job(
+                self._send_reminder,
+                trigger=DateTrigger(run_date=remind_6h),
+                args=[channel, role_id, event, "還有 6 小時，請先準備好開會大綱！"],
+                id=f"{event.id}_6h",
+                misfire_grace_time=60,
+            )
+
+        # Schedule 1-hour reminder
         remind_1h = start_time - timedelta(hours=1)
+        if remind_1h > now:
+            self.scheduler.add_job(
+                self._send_reminder,
+                trigger=DateTrigger(run_date=remind_1h),
+                args=[channel, role_id, event, "還有 1 小時，準備要開會囉！"],
+                id=f"{event.id}_1h",
+                misfire_grace_time=60,
+            )
 
-        # Remind 6 hours before the event
-        now = datetime.now(timezone.utc)
-        wait_6h = (remind_6h - now).total_seconds()
-        if wait_6h > 0:
-            await discord.utils.sleep_until(remind_6h)
-            await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) 還有 6 小時，請先準備好開會大綱！]")
+        # Schedule start reminder
+        if start_time > now:
+            self.scheduler.add_job(
+                self._send_reminder,
+                trigger=DateTrigger(run_date=start_time),
+                args=[channel, role_id, event, "現在開始！"],
+                id=f"{event.id}_start",
+                misfire_grace_time=60,
+            )
 
-        # Remind 1 hour before the event
-        now = datetime.now(timezone.utc)
-        wait_1h = (remind_1h - now).total_seconds()
-        if wait_1h > 0:
-            await discord.utils.sleep_until(remind_1h)
-            await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) 還有 1 小時，準備要開會囉！")
+    async def _send_reminder(
+        self, channel: discord.TextChannel, role_id: int, event: discord.ScheduledEvent, message: str
+    ):
+        """Send a reminder message for an event"""
+        try:
+            await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) {message}")
+        except Exception as e:
+            print(f"Failed to send reminder for event {event.name}: {e}")
 
-        # Remind at the start of the event
-        now = datetime.now(timezone.utc)
-        wait_start = (start_time - now).total_seconds()
-        if wait_start > 0:
-            await discord.utils.sleep_until(start_time)
-            await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) 現在開始！")
-
-    # /reminder list
-    @reminder.command(name="list", description="查詢已排程提醒的活動")
-    async def reminder_list(self, interaction: discord.Interaction):
+    # /event list
+    @event_cmd.command(name="list", description="查詢已排程提醒的活動")
+    async def event_list(self, interaction: discord.Interaction):
         if self.update_events_lock.locked():
             await interaction.response.send_message("正在更新活動列表，請稍後再試。", ephemeral=True)
             return
@@ -108,8 +132,9 @@ class EventReminder(commands.Cog):
         msg = "已排程提醒的活動：\n" + "\n".join(lines)
         await interaction.response.send_message(msg, ephemeral=True)
 
-    @reminder.command(name="today", description="查詢今天的活動")
-    async def reminder_today(self, interaction: discord.Interaction):
+    # /event today
+    @event_cmd.command(name="today", description="查詢今天的活動")
+    async def event_today(self, interaction: discord.Interaction):
         if self.update_events_lock.locked():
             await interaction.response.send_message("正在更新活動列表，請稍後再試。", ephemeral=True)
             return
