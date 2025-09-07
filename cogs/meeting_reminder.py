@@ -30,10 +30,10 @@ class MeetingReminder(commands.Cog):
         # Create the scheduler
         self.scheduler = AsyncIOScheduler()
         # Schedule the reminder job every day at 9:00
-        self.scheduler.add_job(self.remind, "cron", hour=9, minute=0)
+        self.scheduler.add_job(self._send_reminder, "cron", hour=9, minute=0)
         self.scheduler.start()
 
-    async def remind(self):
+    async def _send_reminder(self):
         # Only remind on the first day of the last week of the month
         if is_first_day_of_last_week():
             channel = self.bot.get_channel(GeneralChannelId.staff.value)
