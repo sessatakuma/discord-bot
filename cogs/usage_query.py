@@ -12,6 +12,10 @@ class UsageQueryCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def cog_unload(self):
+        """Clean up if necessary when cog is unloaded"""
+        pass
+
     @app_commands.command(name="usage", description="查詢單字於NLB或NLT的用法")
     @app_commands.describe(word="要查詢的單字，支援多個單字，用空格或逗號(,)分隔", site="查詢來源，支援NLB或NLT")
     @app_commands.choices(

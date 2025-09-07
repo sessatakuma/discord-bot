@@ -15,6 +15,10 @@ class DictQueryCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def cog_unload(self):
+        """Clean up if necessary when cog is unloaded"""
+        pass
+
     @app_commands.command(name="dict", description="查詢Weblio字典連結")
     @app_commands.describe(word="要查詢的單字，支援多個單字，用空格或逗號(,)分隔")
     @app_commands.rename(word="單字")

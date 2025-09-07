@@ -8,6 +8,10 @@ class MarkAccentCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def cog_unload(self):
+        """Clean up if necessary when cog is unloaded"""
+        pass
+
     @app_commands.command(name="accent", description="標記日文文字的音調")
     @app_commands.describe(text="要查詢的文字")
     @app_commands.rename(text="文字")
