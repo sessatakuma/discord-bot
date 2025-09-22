@@ -1,0 +1,270 @@
+import discord
+from discord.ext import commands, tasks
+from PIL import Image, ImageDraw, ImageFont
+import requests
+
+# ===============================
+def get_furigana_via_api(sentence: str):
+    url = "https://api.mygo.page/api/MarkAccent/"
+    try:
+        resp = requests.post(url, json={"text": sentence})
+        if resp.status_code == 200:
+            data = resp.json()
+            if data["status"] == 200 and data["result"]:
+                result = []
+                for item in data["result"]:
+                    surface = item["surface"]
+                    furigana = item["furigana"]
+                    accent = [a["accent_marking_type"] for a in item["accent"]]
+
+                    # check subword
+                    if "subword" in item and item["subword"]:
+                        for sw in item["subword"]:
+                            sw_surface = sw["surface"]
+                            sw_furi = sw["furigana"]
+                            # check if subowrd have kanji
+                            if any('\u4e00' <= c <= '\u9fff' for c in sw_surface):
+                                result.append((sw_surface, sw_furi, accent[:len(sw_furi)]))
+                                accent = accent[len(sw_furi):]
+                            else:
+                                result.append((sw_surface, sw_surface, accent[:len(sw_surface)]))
+                                accent = accent[len(sw_surface):]
+                    else:
+                        result.append((surface, furigana, accent))
+                return result
+    except Exception as e:
+        print("API error:", e)
+    return []
+
+    
+# accent rendering
+def draw_accent(d, x, y, width, furiHeight, accentType, N_kanji,N_furi,idx,furi_yes):
+    """
+    d: ImageDraw
+    x, y: 左上角位置
+    width: 該文字區域寬度
+    furiHeight: 振假名高度 (用來估算線的垂直位置)
+    accentType: 0,1,2
+    """
+    lineY = y - 30  #furi高度 
+
+    #沒furi 畫線寬度漢字寬
+    if furi_yes==0: 
+        if accentType == 1:
+            d.line((x+idx*width, lineY, x +(idx+1)*width, lineY), fill=(255, 0, 0), width=2)
+        elif accentType == 2:
+            d.line((x+idx*width, lineY, x +(idx+1)*width, lineY), fill=(255, 0, 0), width=2)
+            d.line((x +(idx+1)*width, lineY, x +(idx+1)*width, lineY + furiHeight), fill=(255, 0, 0), width=2)
+
+    #有furi 畫線寬度furi寬
+    else:         
+        Nstart = (N_kanji/2-N_furi/4)*width
+        if accentType == 1:
+            d.line((x+Nstart+idx*width/2, lineY, x +Nstart+(idx+1)*width/2, lineY), fill=(255, 0, 0), width=2)
+            if idx==0:
+                d.line((x, lineY, x +Nstart, lineY), fill=(255, 0, 0), width=2)
+            elif idx == N_furi-1:
+                d.line((x +Nstart+(idx+1)*width/2, lineY, x + N_kanji*width, lineY), fill=(255, 0, 0), width=2)
+        elif accentType == 2:
+            d.line((x+Nstart+idx*width/2, lineY, x +Nstart+(idx+1)*width/2, lineY), fill=(255, 0, 0), width=2)
+            d.line((x +Nstart+(idx+1)*width/2, lineY, x +Nstart+(idx+1)*width/2, lineY + furiHeight), fill=(255, 0, 0), width=2)
+            if idx==0:
+                d.line((x, lineY, x +Nstart, lineY), fill=(255, 0, 0), width=2)
+
+# ==============主程式=================
+
+def text2png(query, drawBox=False):
+    basefontSize = 40
+    furifontSize = 20
+    maxWordPerLine = 40
+    spacing = 40
+    boarderSize = 20
+    furiRatio = 0.5
+    font = ImageFont.truetype("./font/NotoSerifJP-Regular.otf", basefontSize)
+    furifont = ImageFont.truetype("./font/NotoSerifJP-Regular.otf", furifontSize)
+
+    tmp_img = Image.new(mode="RGB", size=(100,100), color=(255,255,255))
+    tmp_draw = ImageDraw.Draw(tmp_img)
+
+    result = get_furigana_via_api(query)
+    if not result:
+        print("API 讀取失敗")
+        return False
+
+    # 自動換行
+    lines = []
+    current_line = []
+    charCnt = 0
+    for surface, furigana, accent in result:
+        if charCnt + len(surface) > maxWordPerLine:
+            lines.append(current_line)
+            current_line = []
+            charCnt = 0
+        current_line.append((surface, furigana, accent))
+        charCnt += len(surface)
+    if current_line:
+        lines.append(current_line)
+
+    query_with_newlines = "\n".join("".join(surface for surface, _, _ in line) for line in lines)
+    linesNum = len(lines)
+    wordPerLine = max((sum(len(surface) for surface, _, _ in line) for line in lines), default=1)
+
+    bbox = tmp_draw.multiline_textbbox((0,0), query_with_newlines, font=font, spacing=spacing, align="left")
+    furiHeight = int(spacing * furiRatio)
+    emptySpace = spacing - furiHeight
+    width = bbox[2] - bbox[0] + 2 * boarderSize
+    height = bbox[3] - bbox[1] + spacing + 2 * boarderSize - emptySpace
+    height += furiHeight + 20
+
+    furiWidth = (width - 2*boarderSize) / wordPerLine
+    paddingHeight = (height - 2*boarderSize + emptySpace) / max(linesNum, 1)
+    kanjiHeight = paddingHeight - emptySpace
+
+    img = Image.new(mode="RGBA", size=(width, height), color=(0,0,0,0))
+    d = ImageDraw.Draw(img)
+
+    charCnt = 0
+    current_line = 0
+    for surface, furigana, accent in result:
+        if charCnt + len(surface) > maxWordPerLine:
+            charCnt = 0
+            current_line += 1
+
+        x = charCnt * furiWidth + boarderSize
+        y_base = boarderSize + spacing if linesNum == 1 else current_line*paddingHeight + boarderSize + emptySpace
+
+        if drawBox:
+            d.rectangle((x, y_base - furiHeight, x+furiWidth*len(surface), y_base), outline=(255,0,0))
+            d.rectangle((x, y_base, x+furiWidth*len(surface), y_base+kanjiHeight), outline=(0,0,255))
+
+        # 畫 furigana（只對漢字）
+        if furigana and furigana != surface and any(is_kanji(c) for c in surface):
+            centerX = int(x + furiWidth*len(surface)/2)
+            furi_y = y_base - 5
+            d.text((centerX, furi_y), furigana, fill=(255,255,255,255), font=furifont, anchor="mb")
+
+        # 畫漢字/假名
+        d.text((x, y_base + kanjiHeight/2 - 20), surface, fill=(255,255,255,255), font=font, anchor="lm")
+
+        # 畫 accent
+        accent_list = accent
+        kanji_len = len(surface)
+        furi_len = len(furigana) if furigana else kanji_len
+        furi_yes = 1 if furigana and furigana != surface and any(is_kanji(c) for c in surface) else 0
+        for idx, a in enumerate(accent_list):
+            draw_accent(d, x, y_base, furiWidth, furiHeight, a, kanji_len, furi_len, idx, furi_yes)
+
+        charCnt += len(surface)
+
+    img.save("./images/furigana.png")
+    return True
+
+class Vocabulary(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    #文字
+    @commands.command(brief="Append furigana to kanji", aliases=["f"])
+    async def furigana(self, ctx: commands.Context):
+
+        content = ctx.message.content.split(" ", 1)
+        if len(content) < 2:
+            await ctx.send("請輸入要加振假名的文字。")
+            return
+        query = content[1]
+
+        result = get_furigana_via_api(query)
+        hackmd_text = ""
+        for surface, furigana, accent in result:
+            if furigana and furigana != surface:
+                hackmd_text += f"{surface}({furigana})"
+            else:
+                hackmd_text += surface
+        await ctx.send(f"```\n{hackmd_text}\n```")
+
+    #圖片
+    @commands.command(brief="Generate furigana image", aliases=["p"])
+    async def picture(self, ctx: commands.Context):
+        content = ctx.message.content.split(" ", 1)
+        if len(content) < 2:
+            await ctx.send("請輸入要產生圖片的文字。")
+            return
+        query = content[1]
+
+        success = text2png(query, drawBox=False)
+        if success:
+            await ctx.send(file=discord.File("./images/furigana.png"))
+        else:
+            await ctx.send("圖片生成失敗")
+        
+
+        
+# Take action when load
+async def setup(bot: commands.Bot):
+    print("Vocabulary setup...")
+    await bot.add_cog(Vocabulary(bot))
+    
+# Take action when reload
+async def teardown(bot: commands.Bot):
+    print("Vocabulary teardown...")
+
+
+"""
+TODO:
+01. 對於全型還有半型混雜的情況，需要進行處理。可能一開始就要先算好全型還有半型的型狀，再去切bbox。 => 每次開始畫字的時候都要先計算一次?
+02. 對於較長的輸入，可以考慮每行都重設一個定位點。 
+03. 對フリガナ會重疊的問題進行處理。
+04. 在畫字的時候，要考慮到如果一個詞被切到，需要提前進行換行。
+05. 對於使用者修正原本的訊息可以進行rerender。
+06. 對預先定好的字讀音可以複寫。
+07. 加入音調功能。
+08. 輸出成hackmd可以使用的格式。
+09. 輸出成html檔。
+10. 使用html2pdf的一些converter，可以得到匯出成pdf的功能。
+"""
+
+#  API accent 轉成每個假名的 accent type(API更新後用不到)
+def convert_accent_per_kana(furigana, word_accent):
+    """
+    furigana: str, e.g., "てんき"
+    word_accent: int, e.g., 1 (-1 = 無accent)
+    return: list[int], 每個假名的 accent type
+    """
+    result = []
+    for i, _ in enumerate(furigana):
+        if word_accent == -1:
+            result.append(0)
+        elif word_accent == 0:
+            # 0號音，第一音節低，其餘高
+            result.append(0 if i == 0 else 1)
+        else:
+            # word_accent > 0
+            if i + 1 == word_accent:
+                result.append(2)  # 高音下降
+            else:
+                result.append(0)  # 其他低音
+    return result
+
+def is_kanji(char):
+    return '\u4e00' <= char <= '\u9fff'
+
+
+#  Accent轉換(API更新後用不到)
+def calc_accent(word_index, char_index, word_surface, word_accent, new_words):
+    monosyllabic = len(word_surface) == 1
+    prev_accent = new_words[word_index - 1]["accent"] if word_index > 0 else -1
+    case_particles = ['は', 'が', 'を', 'に', 'で', 'と', 'へ', 'から', 'まで', 'より']
+    after_particle = word_index > 0 and new_words[word_index-1]["surface"] in case_particles
+
+    is_drop = (char_index + 1 == word_accent)
+    if word_accent == -1:
+        return 0
+    if word_accent == 0:
+        if char_index > 0:
+            return 1
+        if monosyllabic:
+            return 1
+        if prev_accent == 0:
+            return 0 if after_particle else 1
+        return 0
+    return 2 if is_drop else 0
