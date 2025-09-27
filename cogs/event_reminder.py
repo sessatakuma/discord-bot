@@ -7,7 +7,7 @@ from apscheduler.triggers.date import DateTrigger
 from discord import app_commands
 from discord.ext import commands
 
-from config.settings import GUILD_ID, GeneralChannelId, RoleId
+from config.settings import GUILD_ID, GeneralChannelId, MeetingChannelId, RoleId
 
 
 def get_role_name(channel_name: str) -> str:
@@ -126,9 +126,9 @@ class EventReminder(commands.Cog):
         lines = []
         for event in self.scheduled_events:
             # Check if user has the role for this event
-            if not event.channel.permissions_for(interaction.user).read_messages:
-                continue
-            lines.append(f"• {event.name} (開始於: <t:{int(event.start_time.timestamp())}:F>)")
+            role_name = MeetingChannelId(event.channel.id).name
+            if role_name and interaction.user.get_role(RoleId[role_name].value):
+                lines.append(f"• {event.name} (開始於: <t:{int(event.start_time.timestamp())}:F>)")
         msg = "已排程提醒的活動：\n" + "\n".join(lines)
         await interaction.response.send_message(msg, ephemeral=True)
 
@@ -146,9 +146,9 @@ class EventReminder(commands.Cog):
         lines = []
         for event in today_events:
             # Check if user has the role for this event
-            if not event.channel.permissions_for(interaction.user).read_messages:
-                continue
-            lines.append(event.url)
+            role_name = MeetingChannelId(event.channel.id).name
+            if role_name and interaction.user.get_role(RoleId[role_name].value):
+                lines.append(f"• [{event.name}]({event.url})")
         msg = "今天的活動：\n" + "\n".join(lines)
         await interaction.response.send_message(msg, ephemeral=True)
 
