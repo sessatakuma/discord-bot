@@ -24,6 +24,13 @@ class GeneralChannelId(Enum):
     content = 1377275852311494776
 
 
+class MeetingChannelId(Enum):
+    staff = 1366969280553554020
+    design = 1377278148617699368
+    tech = 1377277888931303434
+    content = 1377278272676692111
+
+
 # Cogs to load
 COGS = [
     "cogs.dict_query",
