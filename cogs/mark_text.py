@@ -1,15 +1,18 @@
+import io
+
+import discord
+import requests
 from discord import Interaction, app_commands
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
-import requests
-import discord
-import io
 
 from config.settings import API_URL
+
 
 def get_furigana_via_api(sentence: str):
     url = f"{API_URL}/api/MarkAccent/"
     try:
+        # TODO: replace with aiohttp for async
         resp = requests.post(url, json={"text": sentence})
         if resp.status_code == 200:
             data = resp.json()
@@ -26,21 +29,22 @@ def get_furigana_via_api(sentence: str):
                             sw_surface = sw["surface"]
                             sw_furi = sw["furigana"]
                             # check if subowrd have kanji
-                            if any('\u4e00' <= c <= '\u9fff' for c in sw_surface):
-                                result.append((sw_surface, sw_furi, accent[:len(sw_furi)]))
-                                accent = accent[len(sw_furi):]
+                            if any("\u4e00" <= c <= "\u9fff" for c in sw_surface):
+                                result.append((sw_surface, sw_furi, accent[: len(sw_furi)]))
+                                accent = accent[len(sw_furi) :]
                             else:
-                                result.append((sw_surface, sw_surface, accent[:len(sw_surface)]))
-                                accent = accent[len(sw_surface):]
+                                result.append((sw_surface, sw_surface, accent[: len(sw_surface)]))
+                                accent = accent[len(sw_surface) :]
                     else:
                         result.append((surface, furigana, accent))
                 return result
     except Exception as e:
         print("API error:", e)
     return []
-    
+
+
 # accent rendering
-def draw_accent(d, x, y, width, furiHeight, accentType, N_kanji,N_furi,idx,furi_yes):
+def draw_accent(d, x, y, width, furiHeight, accentType, N_kanji, N_furi, idx, furi_yes):
     """
     d: ImageDraw
     x, y: 左上角位置
@@ -48,37 +52,55 @@ def draw_accent(d, x, y, width, furiHeight, accentType, N_kanji,N_furi,idx,furi_
     furiHeight: 振假名高度 (用來估算線的垂直位置)
     accentType: 0,1,2
     """
-    lineY = y - 30  #furi高度 
+    lineY = y - 30  # furi高度
 
-    #沒furi 畫線寬度漢字寬
-    if furi_yes==0: 
+    # 沒furi 畫線寬度漢字寬
+    if furi_yes == 0:
         if accentType == 1:
-            d.line((x+idx*width, lineY, x +(idx+1)*width, lineY), fill=(255, 0, 0), width=2)
+            d.line((x + idx * width, lineY, x + (idx + 1) * width, lineY), fill=(255, 0, 0), width=2)
         elif accentType == 2:
-            d.line((x+idx*width, lineY, x +(idx+1)*width, lineY), fill=(255, 0, 0), width=2)
-            d.line((x +(idx+1)*width, lineY, x +(idx+1)*width, lineY + furiHeight), fill=(255, 0, 0), width=2)
+            d.line((x + idx * width, lineY, x + (idx + 1) * width, lineY), fill=(255, 0, 0), width=2)
+            d.line(
+                (x + (idx + 1) * width, lineY, x + (idx + 1) * width, lineY + furiHeight), fill=(255, 0, 0), width=2
+            )
         else:
             pass
 
-    #有furi 畫線寬度furi寬
-    else:         
-        Nstart = (N_kanji/2-N_furi/4)*width
+    # 有furi 畫線寬度furi寬
+    else:
+        Nstart = (N_kanji / 2 - N_furi / 4) * width
         if accentType == 1:
-            d.line((x+Nstart+idx*width/2, lineY, x +Nstart+(idx+1)*width/2, lineY), fill=(255, 0, 0), width=2)
-            if idx==0:
-                d.line((x, lineY, x +Nstart, lineY), fill=(255, 0, 0), width=2)
-            elif idx == N_furi-1:
-                d.line((x +Nstart+(idx+1)*width/2, lineY, x + N_kanji*width, lineY), fill=(255, 0, 0), width=2)
+            d.line(
+                (x + Nstart + idx * width / 2, lineY, x + Nstart + (idx + 1) * width / 2, lineY),
+                fill=(255, 0, 0),
+                width=2,
+            )
+            if idx == 0:
+                d.line((x, lineY, x + Nstart, lineY), fill=(255, 0, 0), width=2)
+            elif idx == N_furi - 1:
+                d.line(
+                    (x + Nstart + (idx + 1) * width / 2, lineY, x + N_kanji * width, lineY), fill=(255, 0, 0), width=2
+                )
         elif accentType == 2:
-            d.line((x+Nstart+idx*width/2, lineY, x +Nstart+(idx+1)*width/2, lineY), fill=(255, 0, 0), width=2)
-            d.line((x +Nstart+(idx+1)*width/2, lineY, x +Nstart+(idx+1)*width/2, lineY + furiHeight), fill=(255, 0, 0), width=2)
-            if idx==0:
-                d.line((x, lineY, x +Nstart, lineY), fill=(255, 0, 0), width=2)
+            d.line(
+                (x + Nstart + idx * width / 2, lineY, x + Nstart + (idx + 1) * width / 2, lineY),
+                fill=(255, 0, 0),
+                width=2,
+            )
+            d.line(
+                (x + Nstart + (idx + 1) * width / 2, lineY, x + Nstart + (idx + 1) * width / 2, lineY + furiHeight),
+                fill=(255, 0, 0),
+                width=2,
+            )
+            if idx == 0:
+                d.line((x, lineY, x + Nstart, lineY), fill=(255, 0, 0), width=2)
         else:
             pass
+
 
 def is_kanji(char):
-    return '\u4e00' <= char <= '\u9fff'
+    return "\u4e00" <= char <= "\u9fff"
+
 
 def text2png(query, drawBox=False):
     basefontSize = 40
@@ -90,7 +112,7 @@ def text2png(query, drawBox=False):
     font = ImageFont.truetype("./font/NotoSerifJP-Regular.otf", basefontSize)
     furifont = ImageFont.truetype("./font/NotoSerifJP-Regular.otf", furifontSize)
 
-    tmp_img = Image.new(mode="RGB", size=(100,100), color=(255,255,255))
+    tmp_img = Image.new(mode="RGB", size=(100, 100), color=(255, 255, 255))
     tmp_draw = ImageDraw.Draw(tmp_img)
 
     result = get_furigana_via_api(query)
@@ -116,18 +138,18 @@ def text2png(query, drawBox=False):
     linesNum = len(lines)
     wordPerLine = max((sum(len(surface) for surface, _, _ in line) for line in lines), default=1)
 
-    bbox = tmp_draw.multiline_textbbox((0,0), query_with_newlines, font=font, spacing=spacing, align="left")
+    bbox = tmp_draw.multiline_textbbox((0, 0), query_with_newlines, font=font, spacing=spacing, align="left")
     furiHeight = int(spacing * furiRatio)
     emptySpace = spacing - furiHeight
     width = bbox[2] - bbox[0] + 2 * boarderSize
     height = bbox[3] - bbox[1] + spacing + 2 * boarderSize - emptySpace
     height += furiHeight + 20
 
-    furiWidth = (width - 2*boarderSize) / wordPerLine
-    paddingHeight = (height - 2*boarderSize + emptySpace) / max(linesNum, 1)
+    furiWidth = (width - 2 * boarderSize) / wordPerLine
+    paddingHeight = (height - 2 * boarderSize + emptySpace) / max(linesNum, 1)
     kanjiHeight = paddingHeight - emptySpace
 
-    img = Image.new(mode="RGBA", size=(width, height), color=(0,0,0,0))
+    img = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
     d = ImageDraw.Draw(img)
 
     charCnt = 0
@@ -138,20 +160,20 @@ def text2png(query, drawBox=False):
             current_line += 1
 
         x = charCnt * furiWidth + boarderSize
-        y_base = boarderSize + spacing if linesNum == 1 else current_line*paddingHeight + boarderSize + emptySpace
+        y_base = boarderSize + spacing if linesNum == 1 else current_line * paddingHeight + boarderSize + emptySpace
 
         if drawBox:
-            d.rectangle((x, y_base - furiHeight, x+furiWidth*len(surface), y_base), outline=(255,0,0))
-            d.rectangle((x, y_base, x+furiWidth*len(surface), y_base+kanjiHeight), outline=(0,0,255))
+            d.rectangle((x, y_base - furiHeight, x + furiWidth * len(surface), y_base), outline=(255, 0, 0))
+            d.rectangle((x, y_base, x + furiWidth * len(surface), y_base + kanjiHeight), outline=(0, 0, 255))
 
         # 畫 furigana（只對漢字）
         if furigana and furigana != surface and any(is_kanji(c) for c in surface):
-            centerX = int(x + furiWidth*len(surface)/2)
+            centerX = int(x + furiWidth * len(surface) / 2)
             furi_y = y_base - 5
-            d.text((centerX, furi_y), furigana, fill=(255,255,255,255), font=furifont, anchor="mb")
+            d.text((centerX, furi_y), furigana, fill=(255, 255, 255, 255), font=furifont, anchor="mb")
 
         # 畫漢字/假名
-        d.text((x, y_base + kanjiHeight/2 - 20), surface, fill=(255,255,255,255), font=font, anchor="lm")
+        d.text((x, y_base + kanjiHeight / 2 - 20), surface, fill=(255, 255, 255, 255), font=font, anchor="lm")
 
         # 畫 accent
         accent_list = accent
