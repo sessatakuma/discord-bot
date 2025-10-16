@@ -223,8 +223,9 @@ async def mark(interaction: Interaction, text: str):
         await interaction.response.send_message("請輸入要產生圖片的文字。")
         return
     print("Generating image for:", text)
+    await interaction.response.defer()
     success, buffer = await text2png(text, drawBox=False)
     if success:
-        await interaction.response.send_message(file=discord.File(buffer, filename="marked_text.png"))
+        await interaction.followup.send(file=discord.File(buffer, filename="marked_text.png"))
     else:
-        await interaction.response.send_message("圖片生成失敗")
+        await interaction.followup.send("圖片生成失敗")
