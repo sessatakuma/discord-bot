@@ -8,6 +8,10 @@ from discord.ext import commands
 from config.settings import API_URL
 
 
+async def usage_query_handler(interaction, words, site):
+    await fetch_usage(interaction, words, site)
+
+
 class UsageQueryCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
