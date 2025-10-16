@@ -45,8 +45,23 @@ async def fetch_dict_link(interaction: Interaction, words: str):
             async with session.post(f"{API_URL}/api/DictQuery/", json=query_data) as response:
                 if response.status == 200:
                     data = await response.json()
-                    link: str = data["result"]
-                    return f"📚 **{word}**: {link}"
+                    if data["status"] == 200:
+                        item: dict
+                        ret = []
+                        for idx, item in enumerate(data["result"], 1):
+                            kanji = f'{idx}. {", ".join(item.get("kanji", ""))}'
+                            furigana = f'【{", ".join(item.get("furigana", ""))}】'
+                            definitions = ""
+                            for definition in item.get("definitions", []):
+                                pos = f'({", ".join(p)})' if (p := definition.get("pos", [])) else ""
+                                meanings = f'▶ {" ▶ ".join(definition.get("meanings", []))}'
+                                definitions += f"> {pos} {meanings}\n"
+                            ret.append(f"{kanji} {furigana}\n{definitions}")
+                        return f'📚 **{word}**:\n{"".join(ret)}'
+                    elif data["status"] == 404:
+                        return f"❌ **{word}**: 查無結果"
+                    else:
+                        return f"❌ **{word}**: 查詢失敗，錯誤內容({data['status']}: {data['error'].get('message', '未知錯誤')})"
                 else:
                     return f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}"
         except Exception as e:
