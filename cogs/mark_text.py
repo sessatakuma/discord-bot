@@ -1,7 +1,8 @@
+import asyncio
 import io
 
+import aiohttp
 import discord
-import requests
 from discord import Interaction, app_commands
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
@@ -9,35 +10,35 @@ from PIL import Image, ImageDraw, ImageFont
 from config.settings import API_URL
 
 
-def get_furigana_via_api(sentence: str):
+async def get_furigana_via_api(sentence: str):
     url = f"{API_URL}/api/MarkAccent/"
     try:
-        # TODO: replace with aiohttp for async
-        resp = requests.post(url, json={"text": sentence})
-        if resp.status_code == 200:
-            data = resp.json()
-            if data["status"] == 200 and data["result"]:
-                result = []
-                for item in data["result"]:
-                    surface = item["surface"]
-                    furigana = item["furigana"]
-                    accent = [a["accent_marking_type"] for a in item["accent"]]
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json={"text": sentence}) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data["status"] == 200 and data["result"]:
+                        result = []
+                        for item in data["result"]:
+                            surface = item["surface"]
+                            furigana = item["furigana"]
+                            accent = [a["accent_marking_type"] for a in item["accent"]]
 
-                    # check subword
-                    if "subword" in item and item["subword"]:
-                        for sw in item["subword"]:
-                            sw_surface = sw["surface"]
-                            sw_furi = sw["furigana"]
-                            # check if subowrd have kanji
-                            if any("\u4e00" <= c <= "\u9fff" for c in sw_surface):
-                                result.append((sw_surface, sw_furi, accent[: len(sw_furi)]))
-                                accent = accent[len(sw_furi) :]
+                            # check subword
+                            if "subword" in item and item["subword"]:
+                                for sw in item["subword"]:
+                                    sw_surface = sw["surface"]
+                                    sw_furi = sw["furigana"]
+                                    # check if subowrd have kanji
+                                    if any("\u4e00" <= c <= "\u9fff" for c in sw_surface):
+                                        result.append((sw_surface, sw_furi, accent[: len(sw_furi)]))
+                                        accent = accent[len(sw_furi) :]
+                                    else:
+                                        result.append((sw_surface, sw_surface, accent[: len(sw_surface)]))
+                                        accent = accent[len(sw_surface) :]
                             else:
-                                result.append((sw_surface, sw_surface, accent[: len(sw_surface)]))
-                                accent = accent[len(sw_surface) :]
-                    else:
-                        result.append((surface, furigana, accent))
-                return result
+                                result.append((surface, furigana, accent))
+                        return result
     except Exception as e:
         print("API error:", e)
     return []
@@ -102,7 +103,8 @@ def is_kanji(char):
     return "\u4e00" <= char <= "\u9fff"
 
 
-def text2png(query, drawBox=False):
+def _generate_image(query, drawBox=False):
+    """Synchronous image generation function, should be executed in the thread pool"""
     basefontSize = 40
     furifontSize = 20
     maxWordPerLine = 40
@@ -115,16 +117,11 @@ def text2png(query, drawBox=False):
     tmp_img = Image.new(mode="RGB", size=(100, 100), color=(255, 255, 255))
     tmp_draw = ImageDraw.Draw(tmp_img)
 
-    result = get_furigana_via_api(query)
-    if not result:
-        print("API 讀取失敗")
-        return False
-
     # 自動換行
     lines = []
     current_line = []
     charCnt = 0
-    for surface, furigana, accent in result:
+    for surface, furigana, accent in query:
         if charCnt + len(surface) > maxWordPerLine:
             lines.append(current_line)
             current_line = []
@@ -154,7 +151,7 @@ def text2png(query, drawBox=False):
 
     charCnt = 0
     current_line = 0
-    for surface, furigana, accent in result:
+    for surface, furigana, accent in query:
         if charCnt + len(surface) > maxWordPerLine:
             charCnt = 0
             current_line += 1
@@ -188,6 +185,17 @@ def text2png(query, drawBox=False):
     buffer: io.BufferedIOBase = io.BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
+    return buffer
+
+
+async def text2png(query, drawBox=False):
+    result = await get_furigana_via_api(query)
+    if not result:
+        print("API 讀取失敗")
+        return False, None
+
+    # Execute image generation in thread pool
+    buffer = await asyncio.to_thread(_generate_image, result, drawBox)
     return True, buffer
 
 
@@ -215,7 +223,7 @@ async def mark(interaction: Interaction, text: str):
         await interaction.response.send_message("請輸入要產生圖片的文字。")
         return
     print("Generating image for:", text)
-    success, buffer = text2png(text, drawBox=False)
+    success, buffer = await text2png(text, drawBox=False)
     if success:
         await interaction.response.send_message(file=discord.File(buffer, filename="marked_text.png"))
     else:
