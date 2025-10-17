@@ -10,6 +10,10 @@ from PIL import Image, ImageDraw, ImageFont
 from config.settings import API_URL
 
 
+async def mark_text_handler(interaction, text):
+    await mark(interaction, text)
+
+
 async def get_furigana_via_api(sentence: str):
     url = f"{API_URL}/api/MarkAccent/"
     try:
