@@ -35,6 +35,7 @@ def setup_events(bot: commands.Bot):
         # Setup event scheduler
         event_reminder: EventReminder = bot.get_cog("EventReminder")
         if event_reminder:
+            print("🔔 Setting up event scheduler...")
             await event_reminder.update()
         else:
             print("⚠️ EventReminder cog not found, skipping event scheduler setup")
