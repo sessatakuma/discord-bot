@@ -1,4 +1,6 @@
-discord.py>=2.6.0
+discord.py>=2.0.0
+aiohttp
 python-dotenv
-APScheduler==3.11.0
+APScheduler>=3.10.4
 pillow==11.3.0
+requests==2.32.5
