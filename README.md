@@ -2,10 +2,9 @@
 A discord bot for our community
 
 ## Environment Setting
+Please go [download uv](https://docs.astral.sh/uv/getting-started/installation/) and run the following code:
 ```bash
-conda create -n dcbot python=3.11 -y
-conda activate dcbot
-pip install -r requirements.txt
+uv sync
 ```
 
 ## Run the bot
