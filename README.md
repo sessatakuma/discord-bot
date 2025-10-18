@@ -2,17 +2,14 @@
 A discord bot for our community
 
 ## Environment Setting
-Please go [download uv](https://docs.astral.sh/uv/getting-started/installation/) and run the following code:
-```bash
-uv sync
-```
+Please go [download uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ## Run the bot
 To run the bot, you need to setup two environment variables first:
 ```bash
 export BOT_TOKEN={your_bot_token}
 export API_URL={your_url_to_api}
-python bot.py
+uv run python bot.py
 ```
 
 
