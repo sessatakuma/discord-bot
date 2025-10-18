@@ -2,18 +2,14 @@
 A discord bot for our community
 
 ## Environment Setting
-```bash
-conda create -n dcbot python=3.11 -y
-conda activate dcbot
-pip install -r requirements.txt
-```
+Please go [download uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ## Run the bot
 To run the bot, you need to setup two environment variables first:
 ```bash
 export BOT_TOKEN={your_bot_token}
 export API_URL={your_url_to_api}
-python bot.py
+uv run bot.py
 ```
 
 
