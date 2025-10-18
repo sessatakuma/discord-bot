@@ -9,7 +9,7 @@ To run the bot, you need to setup two environment variables first:
 ```bash
 export BOT_TOKEN={your_bot_token}
 export API_URL={your_url_to_api}
-uv run python bot.py
+uv run bot.py
 ```
 
 
