@@ -2,14 +2,16 @@
 A discord bot for our community
 
 ## Run the bot
-1. You need to setup three environment variables first:
+1. You need to setup the following environment variables in your `.env` file:
     ```bash
-    export BOT_TOKEN={our_bot_token}
-    export API_URL={our_url_to_api}
-    export GOOGLE_SHEET_ID={our_google_sheet_id}
+    BOT_TOKEN={our_bot_token}
+    API_URL={our_url_to_api}
+    GOOGLESHEET_ID={our_google_sheet_id}
+    GOOGLESHEET_PRIVATE_KEY_ID={our_googlesheet_private_key_id}
+    GOOGLESHEET_PRIVATE_KEY={our_googlesheet_private_key}
+    GOOGLESHEET_CLIENT_ID={our_googlesheet_client_id}
     ```
-2. Then paste the `googlesheet_access_key.json` under project folder.
-3. Go [download uv](https://docs.astral.sh/uv/getting-started/installation/) before run the bot with this command:
+2. Go [download uv](https://docs.astral.sh/uv/getting-started/installation/) before run the bot with this command:
     ```bash
     uv run bot.py
     ```

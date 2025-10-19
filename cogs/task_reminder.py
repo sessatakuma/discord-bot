@@ -3,14 +3,14 @@ from discord import app_commands
 from discord.ext import commands
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from config.settings import GOOGLE_SHEET_ID, RoleId
+from config.settings import GOOGLESHEET_ID, GOOGLESHEET_CREDENTIALS, RoleId
 import datetime
 
 SERVICE_ACCOUNT_FILE = 'googlesheet_access_key.json'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-creds = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES
+creds = service_account.Credentials.from_service_account_info(
+    GOOGLESHEET_CREDENTIALS, scopes=SCOPES
 )
 service = build('sheets', 'v4', credentials=creds)
 MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
@@ -29,7 +29,7 @@ class TaskReminder(commands.Cog):
     def _access_data(self):
         WORKSHEET_NAME = '工作表'
         result = service.spreadsheets().values().get(
-            spreadsheetId=GOOGLE_SHEET_ID,
+            spreadsheetId=GOOGLESHEET_ID,
             range=WORKSHEET_NAME
         ).execute()
         self.title = result.get('values', [])[0]
@@ -38,7 +38,7 @@ class TaskReminder(commands.Cog):
     def _access_user_mapping(self):
         WORKSHEET_NAME = '成員!F:G'
         result = service.spreadsheets().values().get(
-            spreadsheetId=GOOGLE_SHEET_ID,
+            spreadsheetId=GOOGLESHEET_ID,
             range=WORKSHEET_NAME
         ).execute()
         # Create a mapping from Discord ID to name in sheet

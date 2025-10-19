@@ -204,9 +204,3 @@ __marimo__/
 
 # Icon files
 icon.png
-
-# googlesheet access key
-googlesheet_access_key.json
-
-# Env setup
-setup_env.sh

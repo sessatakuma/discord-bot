@@ -6,7 +6,20 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 API_URL = os.getenv("API_URL")
-GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
+GOOGLESHEET_ID = os.getenv('GOOGLESHEET_ID')
+GOOGLESHEET_CREDENTIALS = {
+    "type": "service_account",
+    "project_id": "sessatakuma-471415",
+    "private_key_id": os.getenv('GOOGLESHEET_PRIVATE_KEY_ID'),
+    "private_key": os.getenv('GOOGLESHEET_PRIVATE_KEY'),
+    "client_email": "get-sheet-bot@sessatakuma-471415.iam.gserviceaccount.com",
+    "client_id": os.getenv('GOOGLESHEET_CLIENT_ID'),
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/get-sheet-bot%40sessatakuma-471415.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+}
 
 
 GUILD_ID = 1265707637836615730
