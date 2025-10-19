@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from config.settings import GOOGLE_SHEET_ID
+from config.settings import GOOGLE_SHEET_ID, RoleId
 import datetime
 
 SERVICE_ACCOUNT_FILE = 'googlesheet_access_key.json'
@@ -14,6 +14,12 @@ creds = service_account.Credentials.from_service_account_file(
 )
 service = build('sheets', 'v4', credentials=creds)
 MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
+roleid_map = {
+    "テック班": RoleId.tech.value,
+    "デザイン班": RoleId.design.value,
+    "コンテンツ班": RoleId.content.value,
+    "スタッフ": RoleId.staff.value,
+}
 
 class TaskReminder(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -49,6 +55,7 @@ class TaskReminder(commands.Cog):
 
         target = member or interaction.user
         target_id = str(target.id)
+        target_role_ids = [role.id for role in target.roles]
 
         # Try to get the name used in the sheet for this discord id
         mapped_name = self.user_mapping.get(target_id)
@@ -60,6 +67,7 @@ class TaskReminder(commands.Cog):
         title_idx = 0
         priority_idx = 1 # P0, P1, P2, P3
         assignee_idx = 2 # User name
+        group_idx = 3 # Team name
         status_idx = 4 # 尚未開始, 進行中, 已完成
         due_idx = 6 # yyyy/mm/dd
 
@@ -70,8 +78,16 @@ class TaskReminder(commands.Cog):
                 continue
             assignee = row[assignee_idx]
             status = row[status_idx].strip() if row[status_idx] else ""
-            if assignee == mapped_name and status != self.completed_states:
-                # build a compact representation
+            role_id = roleid_map.get(row[group_idx], None) if len(row) > group_idx else None
+            
+            add_task = (
+                # Directly assigned task
+                assignee == mapped_name and status != self.completed_states
+            ) or (
+                # Shared task for the role
+                assignee == "" and role_id in target_role_ids
+            )
+            if add_task:
                 task_title = row[title_idx] if len(row) > title_idx else ""
                 priority = row[priority_idx] if len(row) > priority_idx else ""
                 # Change due to datetime object for sorting
