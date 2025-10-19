@@ -4,6 +4,7 @@ from discord.ext import commands
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from config.settings import GOOGLE_SHEET_ID
+import datetime
 
 SERVICE_ACCOUNT_FILE = 'googlesheet_access_key.json'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -12,6 +13,7 @@ creds = service_account.Credentials.from_service_account_file(
     SERVICE_ACCOUNT_FILE, scopes=SCOPES
 )
 service = build('sheets', 'v4', credentials=creds)
+MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
 
 class TaskReminder(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -56,11 +58,10 @@ class TaskReminder(commands.Cog):
 
         # header order (0-based): 任務, 優先順序, 負責人, 組別, 狀態, 開始日期, 結束日期, 文件, 附註
         title_idx = 0
-        priority_idx = 1
-        assignee_idx = 2
-        status_idx = 4
-        due_idx = 6
-
+        priority_idx = 1 # P0, P1, P2, P3
+        assignee_idx = 2 # User name
+        status_idx = 4 # 尚未開始, 進行中, 已完成
+        due_idx = 6 # yyyy/mm/dd
 
         user_tasks = []
         for row in self.values:
@@ -73,7 +74,11 @@ class TaskReminder(commands.Cog):
                 # build a compact representation
                 task_title = row[title_idx] if len(row) > title_idx else ""
                 priority = row[priority_idx] if len(row) > priority_idx else ""
-                due = row[due_idx] if len(row) > due_idx else ""
+                # Change due to datetime object for sorting
+                if len(row) > due_idx and row[due_idx] != "":
+                    due = datetime.datetime.strptime(row[due_idx], "%Y/%m/%d")
+                else:
+                    due = MAX_TIME
                 user_tasks.append((task_title, priority, due, status))
 
         if not user_tasks:
@@ -82,22 +87,36 @@ class TaskReminder(commands.Cog):
             else:
                 await interaction.response.send_message(f"{target.display_name} 目前沒有未完成的任務。", ephemeral=True)
             return
+        
+        # Sort with a more meaningful order by:
+        # 1. Priority
+        # 2. Due date
+        # 3. Status
+        def sort_key(task):
+            priority_order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
+            priority = priority_order.get(task[1], 99)  # Default to low priority if unknown
+            due_date = task[2] if task[2] is not None else MAX_TIME
+            status = task[3]
+            return (priority, due_date, status)
+        user_tasks.sort(key=sort_key)
 
-        # format message (limit to 20 tasks to avoid huge messages)
         lines = []
-        for i, (t, p, d, s) in enumerate(user_tasks[:20], start=1):
-            lines.append(f"{i}. {t}（優先：{p}，截止：{d}，狀態：{s}）")
-
-        footer = ""
-        if len(user_tasks) > 20:
-            footer = f"\n還有 {len(user_tasks) - 20} 項未列出。"
+        last_priority = "Px"
+        emoji_map = {"尚未開始": "⏳", "進行中": "🔨"}
+        for i, (t, p, d, s) in enumerate(user_tasks, start=1):
+            if p != last_priority:
+                last_priority = p
+                lines.append(f"### 優先順序 {p}")
+            due_display = "----/--/--" if d == MAX_TIME else d.strftime("%Y/%m/%d")
+            lines.append(f"{i}. {t}: {emoji_map.get(s, '')}{s}（截止：{due_display}）")
 
         if target == interaction.user:
             header = "你的未完成任務："
         else:
             header = f"{target.display_name} 的未完成任務："
 
-        await interaction.response.send_message(header + "\n" + "\n".join(lines) + footer, ephemeral=True)
+        message = header + "\n" + "\n".join(lines)
+        await interaction.response.send_message(message, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(TaskReminder(bot))
