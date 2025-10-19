@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 API_URL = os.getenv("API_URL")
+GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
+
 
 GUILD_ID = 1265707637836615730
 
@@ -39,4 +41,5 @@ COGS = [
     "cogs.mark_text",
     "cogs.event_reminder",
     "cogs.meeting_reminder",
+    "cogs.task_reminder",
 ]

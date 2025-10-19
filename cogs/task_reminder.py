@@ -3,11 +3,10 @@ from discord import app_commands
 from discord.ext import commands
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-import os
+from config.settings import GOOGLE_SHEET_ID
 
 SERVICE_ACCOUNT_FILE = 'googlesheet_access_key.json'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 
 creds = service_account.Credentials.from_service_account_file(
     SERVICE_ACCOUNT_FILE, scopes=SCOPES
@@ -15,8 +14,6 @@ creds = service_account.Credentials.from_service_account_file(
 service = build('sheets', 'v4', credentials=creds)
 
 class TaskReminder(commands.Cog):
-    task_cmd = app_commands.Group(name="tasks", description="任務相關指令")
-    
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.completed_states = "已完成"
@@ -40,10 +37,10 @@ class TaskReminder(commands.Cog):
         self.user_mapping = {row[1]: row[0] for row in result.get('values', [])[1:]}
         
     # TODO: Add group query function
-
-    @task_cmd.command(name="list", description="查看你的未完成任務")
-    @app_commands.describe(member="要查詢的成員（預設為自己）")
-    async def get_user_tasks(self, interaction: discord.Interaction, member: discord.Member = None):
+    
+    @app_commands.command(name="todo", description="查詢成員的未完成任務")
+    @app_commands.describe(member="查詢的成員（預設：自己）")
+    async def get_user_todo_tasks(self, interaction: discord.Interaction, member: discord.Member = None):
         # Ensure latest data
         self._access_data()
         self._access_user_mapping()
