@@ -1,48 +1,39 @@
 import discord
+import datetime
 from discord import app_commands
 from discord.ext import commands
 from googleapiclient.discovery import build
-from google.oauth2 import service_account
-from config.settings import GOOGLESHEET_ID, GOOGLESHEET_CREDENTIALS, RoleId
-import datetime
-
-SERVICE_ACCOUNT_FILE = 'googlesheet_access_key.json'
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
-creds = service_account.Credentials.from_service_account_info(
-    GOOGLESHEET_CREDENTIALS, scopes=SCOPES
+from config.googlesheet import (
+    ROLEID_MAP,
+    GOOGLESHEET_ID,
+    GOOGLESHEET_CREDS,
+    get_user_mapping,
 )
-service = build('sheets', 'v4', credentials=creds)
+
 MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
-roleid_map = {
-    "テック班": RoleId.tech.value,
-    "デザイン班": RoleId.design.value,
-    "コンテンツ班": RoleId.content.value,
-    "スタッフ": RoleId.staff.value,
-}
 
 class TaskReminder(commands.Cog):
     def __init__(self, bot: commands.Bot):
+        self.user_mapping = get_user_mapping()
+        self.service = build('sheets', 'v4', credentials=GOOGLESHEET_CREDS)
         self.bot = bot
         self.completed_states = "已完成"
         
     def _access_data(self):
         WORKSHEET_NAME = '工作表'
-        result = service.spreadsheets().values().get(
-            spreadsheetId=GOOGLESHEET_ID,
-            range=WORKSHEET_NAME
-        ).execute()
+        try:
+            result = self.service.spreadsheets().values().get(
+                spreadsheetId=GOOGLESHEET_ID,
+                range=WORKSHEET_NAME
+            ).execute()
+        except Exception as e:
+            print(f"Error accessing Google Sheet: {e}")
+            self.title = []
+            self.values = []
+            return
+        
         self.title = result.get('values', [])[0]
         self.values = result.get('values', [])[1:]
-        
-    def _access_user_mapping(self):
-        WORKSHEET_NAME = '成員!F:G'
-        result = service.spreadsheets().values().get(
-            spreadsheetId=GOOGLESHEET_ID,
-            range=WORKSHEET_NAME
-        ).execute()
-        # Create a mapping from Discord ID to name in sheet
-        self.user_mapping = {row[1]: row[0] for row in result.get('values', [])[1:]}
         
     # TODO: Add group query function
     
@@ -51,14 +42,14 @@ class TaskReminder(commands.Cog):
     async def get_user_todo_tasks(self, interaction: discord.Interaction, member: discord.Member = None):
         # Ensure latest data
         self._access_data()
-        self._access_user_mapping()
 
         target = member or interaction.user
         target_id = str(target.id)
         target_role_ids = [role.id for role in target.roles]
 
         # Try to get the name used in the sheet for this discord id
-        mapped_name = self.user_mapping.get(target_id)
+        user_mapping = self.user_mapping.get(target_id, None)
+        mapped_name = user_mapping.get("name", None) if user_mapping else None
         if mapped_name is None:
             await interaction.response.send_message("找不到此成員在名單中的對應名稱，請聯絡管理員。", ephemeral=True)
             return
@@ -78,7 +69,7 @@ class TaskReminder(commands.Cog):
                 continue
             assignee = row[assignee_idx]
             status = row[status_idx].strip() if row[status_idx] else ""
-            role_id = roleid_map.get(row[group_idx], None) if len(row) > group_idx else None
+            role_id = ROLEID_MAP.get(row[group_idx], None) if len(row) > group_idx else None
             
             add_task = (
                 # Directly assigned task
@@ -95,7 +86,7 @@ class TaskReminder(commands.Cog):
                     due = datetime.datetime.strptime(row[due_idx], "%Y/%m/%d")
                 else:
                     due = MAX_TIME
-                user_tasks.append((task_title, priority, due, status))
+                user_tasks.append((task_title, priority, due, status, row[group_idx]))
 
         if not user_tasks:
             if target == interaction.user:
@@ -119,12 +110,12 @@ class TaskReminder(commands.Cog):
         lines = []
         last_priority = "Px"
         emoji_map = {"尚未開始": "⏳", "進行中": "🔨"}
-        for i, (t, p, d, s) in enumerate(user_tasks, start=1):
+        for i, (t, p, d, s, g) in enumerate(user_tasks, start=1):
             if p != last_priority:
                 last_priority = p
                 lines.append(f"### 優先順序 {p}")
             due_display = "----/--/--" if d == MAX_TIME else d.strftime("%Y/%m/%d")
-            lines.append(f"{i}. {t}: {emoji_map.get(s, '')}{s}（截止：{due_display}）")
+            lines.append(f"{i}. ({g}) {t}: {emoji_map.get(s, '')}{s}（截止：{due_display}）")
 
         if target == interaction.user:
             header = "你的未完成任務："
