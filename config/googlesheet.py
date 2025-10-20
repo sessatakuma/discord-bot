@@ -1,10 +1,9 @@
 import os
-from dotenv import load_dotenv
-from config.settings import RoleId
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-load_dotenv()
+from config.settings import RoleId
 
 GOOGLESHEET_ID = os.getenv('GOOGLESHEET_ID')
 GOOGLESHEET_CREDENTIALS = {
