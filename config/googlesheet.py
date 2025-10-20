@@ -57,5 +57,5 @@ def get_user_mapping():
                 "github": github_id
             }
     print(f"Loaded USER_MAPPING for {len(USER_MAPPING)} users:")
-
+    service.close()
     return USER_MAPPING

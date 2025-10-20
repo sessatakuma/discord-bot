@@ -15,17 +15,19 @@ MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
 class TaskReminder(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.user_mapping = get_user_mapping()
-        self.service = build('sheets', 'v4', credentials=GOOGLESHEET_CREDS)
         self.bot = bot
         self.completed_states = "已完成"
         
     def _access_data(self):
         WORKSHEET_NAME = '工作表'
         try:
-            result = self.service.spreadsheets().values().get(
+            # Create a Google Sheets API service
+            service = build('sheets', 'v4', credentials=GOOGLESHEET_CREDS)
+            result = service.spreadsheets().values().get(
                 spreadsheetId=GOOGLESHEET_ID,
                 range=WORKSHEET_NAME
             ).execute()
+            service.close()
         except Exception as e:
             print(f"Error accessing Google Sheet: {e}")
             self.title = []
