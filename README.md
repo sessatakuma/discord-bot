@@ -3,7 +3,7 @@ A discord bot for our community
 
 ## Run the bot
 1. You need to setup the following environment variables in your `.env` file:
-    ```bash
+    ```properties
     BOT_TOKEN={our_bot_token}
     API_URL={our_url_to_api}
     GOOGLESHEET_ID={our_google_sheet_id}
