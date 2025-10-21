@@ -21,7 +21,10 @@ class UsageQueryCog(commands.Cog):
         pass
 
     @app_commands.command(name="usage", description="查詢單字於NLB或NLT的用法")
-    @app_commands.describe(word="要查詢的單字，支援多個單字，用空格或逗號(,)分隔", site="查詢來源，支援NLB或NLT")
+    @app_commands.describe(
+        word="要查詢的單字，支援多個單字，用空格或逗號(,)分隔",
+        site="查詢來源，支援NLB或NLT",
+    )
     @app_commands.choices(
         site=[
             app_commands.Choice(name="NLB", value="NLB"),
@@ -29,7 +32,9 @@ class UsageQueryCog(commands.Cog):
         ]
     )
     @app_commands.rename(word="單字", site="來源")
-    async def usage_query(self, interaction: Interaction, word: str, site: Literal["NLB", "NLT"]):
+    async def usage_query(
+        self, interaction: Interaction, word: str, site: Literal["NLB", "NLT"]
+    ):
         await fetch_usage(interaction, word, site)
 
 
@@ -37,8 +42,12 @@ async def setup(bot: commands.Bot):
     await bot.add_cog(UsageQueryCog(bot))
 
 
-async def fetch_usage(interaction: Interaction, words: str, site: Literal["NLB", "NLT"]):
-    word_list = [word.strip() for word in words.replace(",", " ").split() if word.strip()]
+async def fetch_usage(
+    interaction: Interaction, words: str, site: Literal["NLB", "NLT"]
+):
+    word_list = [
+        word.strip() for word in words.replace(",", " ").split() if word.strip()
+    ]
     if not word_list:
         await interaction.response.send_message("❌ 請提供有效的單字！", ephemeral=True)
         return
@@ -48,17 +57,19 @@ async def fetch_usage(interaction: Interaction, words: str, site: Literal["NLB",
         """Query usage for a single word and return formatted result"""
         query_data = {"word": word, "site": site}
         try:
-            async with session.post(f"{API_URL}/api/UsageQuery/URL/", json=query_data) as response:
+            async with session.post(
+                f"{API_URL}/api/UsageQuery/URL/", json=query_data
+            ) as response:
                 if response.status == 200:
                     data = await response.json()
                     if data["status"] == 200:
                         items: list = data["result"]
                         if len(items) == 1:
-                            return f'📚 **{items[0]["word"]}**: {items[0]["url"]}'
+                            return f"📚 **{items[0]['word']}**: {items[0]['url']}"
                         elif len(items) > 1:
                             result_lines = [f"📚 **{word}**:"]
                             for item in items:
-                                result_lines.append(f'- {item["word"]}: {item["url"]}')
+                                result_lines.append(f"- {item['word']}: {item['url']}")
                             return "\n".join(result_lines)
                     elif data["status"] == 404:
                         return f"❌ **{word}**: 找不到用法"

@@ -25,7 +25,8 @@ class ControlCog(commands.Cog):
 
         # Use asyncio.gather with return_exceptions=True to continue even if some cogs fail
         results = await asyncio.gather(
-            *[self.bot.reload_extension(cog_name) for cog_name in COGS], return_exceptions=True
+            *[self.bot.reload_extension(cog_name) for cog_name in COGS],
+            return_exceptions=True,
         )
 
         # Process results
@@ -43,10 +44,14 @@ class ControlCog(commands.Cog):
                 ephemeral=True,
             )
         else:
-            await interaction.followup.send(f"✅ Successfully reloaded all {success_count} Cogs!", ephemeral=True)
+            await interaction.followup.send(
+                f"✅ Successfully reloaded all {success_count} Cogs!", ephemeral=True
+            )
 
     @reload_all_cogs.error
-    async def reload_error(self, interaction: Interaction, error: app_commands.AppCommandError):
+    async def reload_error(
+        self, interaction: Interaction, error: app_commands.AppCommandError
+    ):
         """Handle reload command errors"""
         if isinstance(error, app_commands.MissingAnyRole):
             await interaction.response.send_message(

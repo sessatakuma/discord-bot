@@ -32,7 +32,9 @@ async def setup(bot: commands.Bot):
 
 async def fetch_dict_link(interaction: Interaction, words: str):
     # Remove extra spaces and split by spaces or commas
-    word_list = [word.strip() for word in words.replace(",", " ").split() if word.strip()]
+    word_list = [
+        word.strip() for word in words.replace(",", " ").split() if word.strip()
+    ]
     if not word_list:
         await interaction.response.send_message("❌ 請提供有效的單字！", ephemeral=True)
         return
@@ -42,22 +44,30 @@ async def fetch_dict_link(interaction: Interaction, words: str):
         """Query a single word and return formatted result"""
         query_data = {"word": word}
         try:
-            async with session.post(f"{API_URL}/api/DictQuery/", json=query_data) as response:
+            async with session.post(
+                f"{API_URL}/api/DictQuery/", json=query_data
+            ) as response:
                 if response.status == 200:
                     data = await response.json()
                     if data["status"] == 200:
                         item: dict
                         ret = []
                         for idx, item in enumerate(data["result"], 1):
-                            kanji = f'{idx}. {", ".join(item.get("kanji", ""))}'
-                            furigana = f'【{", ".join(item.get("furigana", ""))}】'
+                            kanji = f"{idx}. {', '.join(item.get('kanji', ''))}"
+                            furigana = f"【{', '.join(item.get('furigana', ''))}】"
                             definitions = ""
                             for definition in item.get("definitions", []):
-                                pos = f'({", ".join(p)})' if (p := definition.get("pos", [])) else ""
-                                meanings = f'▶ {" ▶ ".join(definition.get("meanings", []))}'
+                                pos = (
+                                    f"({', '.join(p)})"
+                                    if (p := definition.get("pos", []))
+                                    else ""
+                                )
+                                meanings = (
+                                    f"▶ {' ▶ '.join(definition.get('meanings', []))}"
+                                )
                                 definitions += f"> {pos} {meanings}\n"
                             ret.append(f"{kanji} {furigana}\n{definitions}")
-                        return f'📚 **{word}**:\n{"".join(ret)}'
+                        return f"📚 **{word}**:\n{''.join(ret)}"
                     elif data["status"] == 404:
                         return f"❌ **{word}**: 查無結果"
                     else:
