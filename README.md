@@ -61,3 +61,13 @@ async def setup(bot: commands.Bot):
     await bot.add_cog(YOUR_COMMAND_CLASS(bot))
 
 ```
+
+## Format the project
+First download the ruff tool with uv:
+```bash
+uv tool install ruff
+```
+Then execute the following command to format the project:
+```bash
+ruff format .
+```
