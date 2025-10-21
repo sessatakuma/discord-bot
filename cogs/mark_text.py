@@ -34,11 +34,25 @@ async def get_furigana_via_api(sentence: str):
                                     sw_surface = sw["surface"]
                                     sw_furi = sw["furigana"]
                                     # check if subowrd have kanji
-                                    if any("\u4e00" <= c <= "\u9fff" for c in sw_surface):
-                                        result.append((sw_surface, sw_furi, accent[: len(sw_furi)]))
+                                    if any(
+                                        "\u4e00" <= c <= "\u9fff" for c in sw_surface
+                                    ):
+                                        result.append(
+                                            (
+                                                sw_surface,
+                                                sw_furi,
+                                                accent[: len(sw_furi)],
+                                            )
+                                        )
                                         accent = accent[len(sw_furi) :]
                                     else:
-                                        result.append((sw_surface, sw_surface, accent[: len(sw_surface)]))
+                                        result.append(
+                                            (
+                                                sw_surface,
+                                                sw_surface,
+                                                accent[: len(sw_surface)],
+                                            )
+                                        )
                                         accent = accent[len(sw_surface) :]
                             else:
                                 result.append((surface, furigana, accent))
@@ -62,11 +76,26 @@ def draw_accent(d, x, y, width, furiHeight, accentType, N_kanji, N_furi, idx, fu
     # 沒furi 畫線寬度漢字寬
     if furi_yes == 0:
         if accentType == 1:
-            d.line((x + idx * width, lineY, x + (idx + 1) * width, lineY), fill=(255, 0, 0), width=2)
-        elif accentType == 2:
-            d.line((x + idx * width, lineY, x + (idx + 1) * width, lineY), fill=(255, 0, 0), width=2)
             d.line(
-                (x + (idx + 1) * width, lineY, x + (idx + 1) * width, lineY + furiHeight), fill=(255, 0, 0), width=2
+                (x + idx * width, lineY, x + (idx + 1) * width, lineY),
+                fill=(255, 0, 0),
+                width=2,
+            )
+        elif accentType == 2:
+            d.line(
+                (x + idx * width, lineY, x + (idx + 1) * width, lineY),
+                fill=(255, 0, 0),
+                width=2,
+            )
+            d.line(
+                (
+                    x + (idx + 1) * width,
+                    lineY,
+                    x + (idx + 1) * width,
+                    lineY + furiHeight,
+                ),
+                fill=(255, 0, 0),
+                width=2,
             )
         else:
             pass
@@ -76,7 +105,12 @@ def draw_accent(d, x, y, width, furiHeight, accentType, N_kanji, N_furi, idx, fu
         Nstart = (N_kanji / 2 - N_furi / 4) * width
         if accentType == 1:
             d.line(
-                (x + Nstart + idx * width / 2, lineY, x + Nstart + (idx + 1) * width / 2, lineY),
+                (
+                    x + Nstart + idx * width / 2,
+                    lineY,
+                    x + Nstart + (idx + 1) * width / 2,
+                    lineY,
+                ),
                 fill=(255, 0, 0),
                 width=2,
             )
@@ -84,16 +118,33 @@ def draw_accent(d, x, y, width, furiHeight, accentType, N_kanji, N_furi, idx, fu
                 d.line((x, lineY, x + Nstart, lineY), fill=(255, 0, 0), width=2)
             elif idx == N_furi - 1:
                 d.line(
-                    (x + Nstart + (idx + 1) * width / 2, lineY, x + N_kanji * width, lineY), fill=(255, 0, 0), width=2
+                    (
+                        x + Nstart + (idx + 1) * width / 2,
+                        lineY,
+                        x + N_kanji * width,
+                        lineY,
+                    ),
+                    fill=(255, 0, 0),
+                    width=2,
                 )
         elif accentType == 2:
             d.line(
-                (x + Nstart + idx * width / 2, lineY, x + Nstart + (idx + 1) * width / 2, lineY),
+                (
+                    x + Nstart + idx * width / 2,
+                    lineY,
+                    x + Nstart + (idx + 1) * width / 2,
+                    lineY,
+                ),
                 fill=(255, 0, 0),
                 width=2,
             )
             d.line(
-                (x + Nstart + (idx + 1) * width / 2, lineY, x + Nstart + (idx + 1) * width / 2, lineY + furiHeight),
+                (
+                    x + Nstart + (idx + 1) * width / 2,
+                    lineY,
+                    x + Nstart + (idx + 1) * width / 2,
+                    lineY + furiHeight,
+                ),
                 fill=(255, 0, 0),
                 width=2,
             )
@@ -135,11 +186,17 @@ def _generate_image(query, drawBox=False):
     if current_line:
         lines.append(current_line)
 
-    query_with_newlines = "\n".join("".join(surface for surface, _, _ in line) for line in lines)
+    query_with_newlines = "\n".join(
+        "".join(surface for surface, _, _ in line) for line in lines
+    )
     linesNum = len(lines)
-    wordPerLine = max((sum(len(surface) for surface, _, _ in line) for line in lines), default=1)
+    wordPerLine = max(
+        (sum(len(surface) for surface, _, _ in line) for line in lines), default=1
+    )
 
-    bbox = tmp_draw.multiline_textbbox((0, 0), query_with_newlines, font=font, spacing=spacing, align="left")
+    bbox = tmp_draw.multiline_textbbox(
+        (0, 0), query_with_newlines, font=font, spacing=spacing, align="left"
+    )
     furiHeight = int(spacing * furiRatio)
     emptySpace = spacing - furiHeight
     width = bbox[2] - bbox[0] + 2 * boarderSize
@@ -161,28 +218,65 @@ def _generate_image(query, drawBox=False):
             current_line += 1
 
         x = charCnt * furiWidth + boarderSize
-        y_base = boarderSize + spacing if linesNum == 1 else current_line * paddingHeight + boarderSize + emptySpace
+        y_base = (
+            boarderSize + spacing
+            if linesNum == 1
+            else current_line * paddingHeight + boarderSize + emptySpace
+        )
 
         if drawBox:
-            d.rectangle((x, y_base - furiHeight, x + furiWidth * len(surface), y_base), outline=(255, 0, 0))
-            d.rectangle((x, y_base, x + furiWidth * len(surface), y_base + kanjiHeight), outline=(0, 0, 255))
+            d.rectangle(
+                (x, y_base - furiHeight, x + furiWidth * len(surface), y_base),
+                outline=(255, 0, 0),
+            )
+            d.rectangle(
+                (x, y_base, x + furiWidth * len(surface), y_base + kanjiHeight),
+                outline=(0, 0, 255),
+            )
 
         # 畫 furigana（只對漢字）
         if furigana and furigana != surface and any(is_kanji(c) for c in surface):
             centerX = int(x + furiWidth * len(surface) / 2)
             furi_y = y_base - 5
-            d.text((centerX, furi_y), furigana, fill=(255, 255, 255, 255), font=furifont, anchor="mb")
+            d.text(
+                (centerX, furi_y),
+                furigana,
+                fill=(255, 255, 255, 255),
+                font=furifont,
+                anchor="mb",
+            )
 
         # 畫漢字/假名
-        d.text((x, y_base + kanjiHeight / 2 - 20), surface, fill=(255, 255, 255, 255), font=font, anchor="lm")
+        d.text(
+            (x, y_base + kanjiHeight / 2 - 20),
+            surface,
+            fill=(255, 255, 255, 255),
+            font=font,
+            anchor="lm",
+        )
 
         # 畫 accent
         accent_list = accent
         kanji_len = len(surface)
         furi_len = len(furigana) if furigana else kanji_len
-        furi_yes = 1 if furigana and furigana != surface and any(is_kanji(c) for c in surface) else 0
+        furi_yes = (
+            1
+            if furigana and furigana != surface and any(is_kanji(c) for c in surface)
+            else 0
+        )
         for idx, a in enumerate(accent_list):
-            draw_accent(d, x, y_base, furiWidth, furiHeight, a, kanji_len, furi_len, idx, furi_yes)
+            draw_accent(
+                d,
+                x,
+                y_base,
+                furiWidth,
+                furiHeight,
+                a,
+                kanji_len,
+                furi_len,
+                idx,
+                furi_yes,
+            )
 
         charCnt += len(surface)
 
@@ -230,6 +324,8 @@ async def mark(interaction: Interaction, text: str):
     await interaction.response.defer()
     success, buffer = await text2png(text, drawBox=False)
     if success:
-        await interaction.followup.send(file=discord.File(buffer, filename="marked_text.png"))
+        await interaction.followup.send(
+            file=discord.File(buffer, filename="marked_text.png")
+        )
     else:
         await interaction.followup.send("圖片生成失敗")
