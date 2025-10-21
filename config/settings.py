@@ -2,7 +2,9 @@ import os
 from enum import Enum
 
 TOKEN = os.getenv("BOT_TOKEN")
+assert TOKEN is not None, "BOT_TOKEN environment variable is not set"
 API_URL = os.getenv("API_URL")
+assert API_URL is not None, "API_URL environment variable is not set"
 
 GUILD_ID = 1265707637836615730
 

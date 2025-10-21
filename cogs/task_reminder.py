@@ -17,7 +17,7 @@ class TaskReminder(commands.Cog):
         self.user_mapping = get_user_mapping()
         self.bot = bot
         self.completed_states = "已完成"
-        
+
     def _access_data(self):
         WORKSHEET_NAME = '工作表'
         try:
@@ -30,20 +30,21 @@ class TaskReminder(commands.Cog):
             service.close()
         except Exception as e:
             print(f"Error accessing Google Sheet: {e}")
-            self.title = []
-            self.values = []
-            return
-        
+            return False
+
         self.title = result.get('values', [])[0]
         self.values = result.get('values', [])[1:]
-        
+        return True
+
     # TODO: Add group query function
-    
+
     @app_commands.command(name="todo", description="查詢成員的未完成任務")
     @app_commands.describe(member="查詢的成員（預設：自己）")
     async def get_user_todo_tasks(self, interaction: discord.Interaction, member: discord.Member = None):
         # Ensure latest data
-        self._access_data()
+        if not self._access_data():
+            await interaction.response.send_message("無法連線至 Google Sheet，請稍後再試。", ephemeral=True)
+            return
 
         target = member or interaction.user
         target_id = str(target.id)
@@ -72,7 +73,7 @@ class TaskReminder(commands.Cog):
             assignee = row[assignee_idx]
             status = row[status_idx].strip() if row[status_idx] else ""
             role_id = ROLEID_MAP.get(row[group_idx], None) if len(row) > group_idx else None
-            
+
             add_task = (
                 # Directly assigned task
                 assignee == mapped_name and status != self.completed_states
@@ -96,7 +97,7 @@ class TaskReminder(commands.Cog):
             else:
                 await interaction.response.send_message(f"{target.display_name} 目前沒有未完成的任務。", ephemeral=True)
             return
-        
+
         # Sort with a more meaningful order by:
         # 1. Priority
         # 2. Due date

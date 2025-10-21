@@ -6,13 +6,21 @@ from googleapiclient.discovery import build
 from config.settings import RoleId
 
 GOOGLESHEET_ID = os.getenv('GOOGLESHEET_ID')
+assert GOOGLESHEET_ID, "GOOGLESHEET_ID is not set"
+GOOGLESHEET_PRIVATE_KEY = os.getenv('GOOGLESHEET_PRIVATE_KEY')
+assert GOOGLESHEET_PRIVATE_KEY, "GOOGLESHEET_PRIVATE_KEY is not set"
+GOOGLESHEET_PRIVATE_KEY_ID = os.getenv('GOOGLESHEET_PRIVATE_KEY_ID')
+assert GOOGLESHEET_PRIVATE_KEY_ID, "GOOGLESHEET_PRIVATE_KEY_ID is not set"
+GOOGLESHEET_CLIENT_ID = os.getenv('GOOGLESHEET_CLIENT_ID')
+assert GOOGLESHEET_CLIENT_ID, "GOOGLESHEET_CLIENT_ID is not set"
+
 GOOGLESHEET_CREDENTIALS = {
     "type": "service_account",
     "project_id": "sessatakuma-471415",
-    "private_key_id": os.getenv('GOOGLESHEET_PRIVATE_KEY_ID'),
-    "private_key": os.getenv('GOOGLESHEET_PRIVATE_KEY'),
+    "private_key_id": GOOGLESHEET_PRIVATE_KEY_ID,
+    "private_key": GOOGLESHEET_PRIVATE_KEY,
     "client_email": "get-sheet-bot@sessatakuma-471415.iam.gserviceaccount.com",
-    "client_id": os.getenv('GOOGLESHEET_CLIENT_ID'),
+    "client_id": GOOGLESHEET_CLIENT_ID,
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
     "token_uri": "https://oauth2.googleapis.com/token",
     "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
@@ -43,7 +51,7 @@ def get_user_mapping():
         ).execute().get('values', [])[1:]
     except Exception as e:
         print(f"Error accessing Google Sheet for user mapping: {e}")
-        result = {'values': []}
+        result = []
     # Create a mapping for users
     USER_MAPPING = {}
     for row in result:
