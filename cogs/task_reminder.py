@@ -1,20 +1,23 @@
-import discord
 import datetime
+
+import discord
 from discord import app_commands
 from discord.ext import commands
 from googleapiclient.discovery import build
+
 from config.googlesheet import (
-    ROLEID_MAP,
-    GOOGLESHEET_ID,
     GOOGLESHEET_CREDS,
+    GOOGLESHEET_ID,
+    ROLEID_MAP,
     get_user_mapping,
 )
+from core.bot_core import KumaBot
 
 MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
 
 
 class TaskReminder(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.user_mapping = get_user_mapping()
         self.bot = bot
         self.completed_states = "已完成"
@@ -149,5 +152,5 @@ class TaskReminder(commands.Cog):
         await interaction.response.send_message(message, ephemeral=True)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(TaskReminder(bot))

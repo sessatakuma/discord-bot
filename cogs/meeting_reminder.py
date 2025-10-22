@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from discord import Interaction, app_commands
 from discord.ext import commands
 
 from config.settings import GeneralChannelId, RoleId
+from core.bot_core import KumaBot
 
 
 def is_first_day_of_last_week():
@@ -25,7 +25,7 @@ def is_first_day_of_last_week():
 class MeetingReminder(commands.Cog):
     # meeting_cmd = app_commands.Group(name="meeting", description="活動提醒相關指令")
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.bot = bot
         # Create the scheduler
         self.scheduler = AsyncIOScheduler()
@@ -58,5 +58,5 @@ class MeetingReminder(commands.Cog):
     #         await interaction.response.send_message("找不到指定頻道！", ephemeral=True)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(MeetingReminder(bot))

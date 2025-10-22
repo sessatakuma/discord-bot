@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from config.settings import GUILD_ID, GeneralChannelId, MeetingChannelId, RoleId
+from core.bot_core import KumaBot
 
 
 def get_role_name(channel_name: str) -> str:
@@ -25,7 +26,7 @@ def get_role_name(channel_name: str) -> str:
 class EventReminder(commands.Cog):
     event_cmd = app_commands.Group(name="event", description="活動提醒相關指令")
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.bot = bot
         self.scheduled_events: list[discord.ScheduledEvent] = []
         self.scheduler = AsyncIOScheduler()
@@ -177,5 +178,5 @@ class EventReminder(commands.Cog):
         await interaction.response.send_message(msg, ephemeral=True)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(EventReminder(bot))

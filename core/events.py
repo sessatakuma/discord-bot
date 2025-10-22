@@ -1,10 +1,11 @@
-from discord.ext import commands
+import aiohttp
 
 from cogs.event_reminder import EventReminder
 from config.settings import COGS
+from core.bot_core import KumaBot
 
 
-def setup_events(bot: commands.Bot):
+def setup_events(bot: KumaBot):
     @bot.event
     async def setup_hook():
         """Load cogs when bot is ready"""
@@ -31,6 +32,11 @@ def setup_events(bot: commands.Bot):
             print(f"✅ Successfully synced {len(synced)} commands")
         except Exception as e:
             print(f"❌ Slash command sync failed: {e}")
+
+        # Get aiohttp session
+        if bot.session is None:
+            bot.session = aiohttp.ClientSession()
+            print("🌐 Aiohttp session created")
 
         # Setup event scheduler
         event_reminder: EventReminder = bot.get_cog("EventReminder")

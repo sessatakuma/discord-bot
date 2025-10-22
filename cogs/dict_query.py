@@ -5,6 +5,7 @@ from discord import Interaction, app_commands
 from discord.ext import commands
 
 from config.settings import API_URL
+from core.bot_core import KumaBot
 
 
 async def dict_query_handler(interaction, words):
@@ -12,7 +13,7 @@ async def dict_query_handler(interaction, words):
 
 
 class DictQueryCog(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.bot = bot
 
     def cog_unload(self):
@@ -23,14 +24,16 @@ class DictQueryCog(commands.Cog):
     @app_commands.describe(word="要查詢的單字，支援多個單字，用空格或逗號(,)分隔")
     @app_commands.rename(word="單字")
     async def dict_query(self, interaction: Interaction, word: str):
-        await fetch_dict_link(interaction, word)
+        await fetch_dict_link(interaction, word, self.bot.session)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(DictQueryCog(bot))
 
 
-async def fetch_dict_link(interaction: Interaction, words: str):
+async def fetch_dict_link(
+    interaction: Interaction, words: str, session: aiohttp.ClientSession
+):
     # Remove extra spaces and split by spaces or commas
     word_list = [
         word.strip() for word in words.replace(",", " ").split() if word.strip()
@@ -40,7 +43,7 @@ async def fetch_dict_link(interaction: Interaction, words: str):
         return
     await interaction.response.defer()
 
-    async def query_single_word(session: aiohttp.ClientSession, word: str) -> str:
+    async def query_single_word(word: str) -> str:
         """Query a single word and return formatted result"""
         query_data = {"word": word}
         try:
@@ -79,10 +82,9 @@ async def fetch_dict_link(interaction: Interaction, words: str):
             return f"❌ **{word}**: 發生錯誤"
 
     try:
-        async with aiohttp.ClientSession() as session:
-            # Process all words concurrently
-            tasks = [query_single_word(session, word) for word in word_list]
-            results = await asyncio.gather(*tasks)
+        # Process all words concurrently
+        tasks = [query_single_word(word) for word in word_list]
+        results = await asyncio.gather(*tasks)
 
         if results:
             response_text = "\n".join(results)

@@ -4,10 +4,11 @@ from discord import Interaction, app_commands
 from discord.ext import commands
 
 from config.settings import COGS, RoleId
+from core.bot_core import KumaBot
 
 
 class ControlCog(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.bot = bot
 
     @app_commands.command(name="ping", description="測試機器人是否正常運作")
@@ -70,5 +71,5 @@ class ControlCog(commands.Cog):
                 await interaction.response.send_message(error_msg, ephemeral=True)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(ControlCog(bot))

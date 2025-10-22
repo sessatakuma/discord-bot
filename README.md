@@ -49,15 +49,17 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from core.bot_core import KumaBot
+
 class YOUR_COMMAND_CLASS(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.bot = bot
 
     @app_commands.command(name="command", description="xxxxx")
     async def your_command_function(self, interaction: discord.Interaction):
         pass
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(YOUR_COMMAND_CLASS(bot))
 
 ```
