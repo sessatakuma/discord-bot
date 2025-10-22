@@ -1,13 +1,16 @@
 import os
 
+from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 from config.settings import RoleId
 
+load_dotenv()
+
 GOOGLESHEET_ID = os.getenv("GOOGLESHEET_ID")
 assert GOOGLESHEET_ID, "GOOGLESHEET_ID is not set"
-GOOGLESHEET_PRIVATE_KEY = os.getenv("GOOGLESHEET_PRIVATE_KEY")
+GOOGLESHEET_PRIVATE_KEY = os.getenv("GOOGLESHEET_PRIVATE_KEY").replace("\\n", "\n")
 assert GOOGLESHEET_PRIVATE_KEY, "GOOGLESHEET_PRIVATE_KEY is not set"
 GOOGLESHEET_PRIVATE_KEY_ID = os.getenv("GOOGLESHEET_PRIVATE_KEY_ID")
 assert GOOGLESHEET_PRIVATE_KEY_ID, "GOOGLESHEET_PRIVATE_KEY_ID is not set"
