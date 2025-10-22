@@ -33,6 +33,12 @@ class EventReminder(commands.Cog):
         self.update_events_lock = asyncio.Lock()
         self.scheduler.start()
 
+    async def cog_load(self):
+        """Initialize scheduler when cog is loaded"""
+        if self.bot.is_ready():
+            print("🔔 Setting up event scheduler...")
+            await self.update()
+
     def cog_unload(self):
         """Clean up scheduler when cog is unloaded"""
         if self.scheduler.running:
