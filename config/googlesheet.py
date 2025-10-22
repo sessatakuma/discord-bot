@@ -1,9 +1,12 @@
 import os
 
+from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 from config.settings import RoleId
+
+load_dotenv()
 
 GOOGLESHEET_ID = os.getenv("GOOGLESHEET_ID")
 assert GOOGLESHEET_ID, "GOOGLESHEET_ID is not set"
