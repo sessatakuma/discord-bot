@@ -6,6 +6,7 @@ from discord import Interaction, app_commands
 from discord.ext import commands
 
 from config.settings import API_URL
+from core.bot_core import KumaBot
 
 
 async def usage_query_handler(interaction, words, site):
@@ -13,7 +14,7 @@ async def usage_query_handler(interaction, words, site):
 
 
 class UsageQueryCog(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.bot = bot
 
     def cog_unload(self):
@@ -35,15 +36,18 @@ class UsageQueryCog(commands.Cog):
     async def usage_query(
         self, interaction: Interaction, word: str, site: Literal["NLB", "NLT"]
     ):
-        await fetch_usage(interaction, word, site)
+        await fetch_usage(interaction, word, site, self.bot.session)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(UsageQueryCog(bot))
 
 
 async def fetch_usage(
-    interaction: Interaction, words: str, site: Literal["NLB", "NLT"]
+    interaction: Interaction,
+    words: str,
+    site: Literal["NLB", "NLT"],
+    session: aiohttp.ClientSession,
 ):
     word_list = [
         word.strip() for word in words.replace(",", " ").split() if word.strip()
@@ -53,7 +57,7 @@ async def fetch_usage(
         return
     await interaction.response.defer()
 
-    async def query_single_usage(session: aiohttp.ClientSession, word: str) -> str:
+    async def query_single_usage(word: str) -> str:
         """Query usage for a single word and return formatted result"""
         query_data = {"word": word, "site": site}
         try:
@@ -82,10 +86,9 @@ async def fetch_usage(
             return f"❌ **{word}**: 發生錯誤"
 
     try:
-        async with aiohttp.ClientSession() as session:
-            # Process all words concurrently
-            tasks = [query_single_usage(session, word) for word in word_list]
-            results = await asyncio.gather(*tasks)
+        # Process all words concurrently
+        tasks = [query_single_usage(word) for word in word_list]
+        results = await asyncio.gather(*tasks)
 
         if results:
             response_text = "\n".join(results)

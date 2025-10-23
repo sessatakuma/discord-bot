@@ -1,12 +1,12 @@
 from discord import Interaction, Message
-from discord.ext import commands
 
 from cogs.dict_query import dict_query_handler
 from cogs.mark_text import mark_text_handler
 from cogs.usage_query import usage_query_handler
+from core.bot_core import KumaBot
 
 
-def setup_context_menu(bot: commands.Bot):
+def setup_context_menu(bot: KumaBot):
     @bot.tree.context_menu(name="查詢字典")
     async def dict_query_context_menu(interaction: Interaction, message: Message):
         await dict_query_handler(interaction, message.content)

@@ -8,55 +8,53 @@ from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 
 from config.settings import API_URL
+from core.bot_core import KumaBot
 
 
 async def mark_text_handler(interaction, text):
     await mark(interaction, text)
 
 
-async def get_furigana_via_api(sentence: str):
+async def get_furigana_via_api(sentence: str, session: aiohttp.ClientSession):
     url = f"{API_URL}/api/MarkAccent/"
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json={"text": sentence}) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    if data["status"] == 200 and data["result"]:
-                        result = []
-                        for item in data["result"]:
-                            surface = item["surface"]
-                            furigana = item["furigana"]
-                            accent = [a["accent_marking_type"] for a in item["accent"]]
+        async with session.post(url, json={"text": sentence}) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                if data["status"] == 200 and data["result"]:
+                    result = []
+                    for item in data["result"]:
+                        surface = item["surface"]
+                        furigana = item["furigana"]
+                        accent = [a["accent_marking_type"] for a in item["accent"]]
 
-                            # check subword
-                            if "subword" in item and item["subword"]:
-                                for sw in item["subword"]:
-                                    sw_surface = sw["surface"]
-                                    sw_furi = sw["furigana"]
-                                    # check if subowrd have kanji
-                                    if any(
-                                        "\u4e00" <= c <= "\u9fff" for c in sw_surface
-                                    ):
-                                        result.append(
-                                            (
-                                                sw_surface,
-                                                sw_furi,
-                                                accent[: len(sw_furi)],
-                                            )
+                        # check subword
+                        if "subword" in item and item["subword"]:
+                            for sw in item["subword"]:
+                                sw_surface = sw["surface"]
+                                sw_furi = sw["furigana"]
+                                # check if subowrd have kanji
+                                if any("\u4e00" <= c <= "\u9fff" for c in sw_surface):
+                                    result.append(
+                                        (
+                                            sw_surface,
+                                            sw_furi,
+                                            accent[: len(sw_furi)],
                                         )
-                                        accent = accent[len(sw_furi) :]
-                                    else:
-                                        result.append(
-                                            (
-                                                sw_surface,
-                                                sw_surface,
-                                                accent[: len(sw_surface)],
-                                            )
+                                    )
+                                    accent = accent[len(sw_furi) :]
+                                else:
+                                    result.append(
+                                        (
+                                            sw_surface,
+                                            sw_surface,
+                                            accent[: len(sw_surface)],
                                         )
-                                        accent = accent[len(sw_surface) :]
-                            else:
-                                result.append((surface, furigana, accent))
-                        return result
+                                    )
+                                    accent = accent[len(sw_surface) :]
+                        else:
+                            result.append((surface, furigana, accent))
+                    return result
     except Exception as e:
         print("API error:", e)
     return []
@@ -286,8 +284,8 @@ def _generate_image(query, drawBox=False):
     return buffer
 
 
-async def text2png(query, drawBox=False):
-    result = await get_furigana_via_api(query)
+async def text2png(query, session, drawBox=False):
+    result = await get_furigana_via_api(query, session)
     if not result:
         print("API 讀取失敗")
         return False, None
@@ -298,7 +296,7 @@ async def text2png(query, drawBox=False):
 
 
 class MarkCog(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: KumaBot):
         self.bot = bot
 
     def cog_unload(self):
@@ -309,20 +307,20 @@ class MarkCog(commands.Cog):
     @app_commands.describe(text="要查詢的文字")
     @app_commands.rename(text="文字")
     async def usage_query(self, interaction: Interaction, text: str):
-        await mark(interaction, text)
+        await mark(interaction, text, self.bot.session)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: KumaBot):
     await bot.add_cog(MarkCog(bot))
 
 
-async def mark(interaction: Interaction, text: str):
+async def mark(interaction: Interaction, text: str, session: aiohttp.ClientSession):
     if len(text) < 2:
         await interaction.response.send_message("請輸入要產生圖片的文字。")
         return
     print("Generating image for:", text)
     await interaction.response.defer()
-    success, buffer = await text2png(text, drawBox=False)
+    success, buffer = await text2png(text, session, drawBox=False)
     if success:
         await interaction.followup.send(
             file=discord.File(buffer, filename="marked_text.png")
