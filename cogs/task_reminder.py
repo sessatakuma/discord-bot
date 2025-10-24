@@ -3,13 +3,11 @@ import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
-from googleapiclient.discovery import build
 
 from config.googlesheet import (
-    GOOGLESHEET_CREDS,
+    AGCM,
     GOOGLESHEET_ID,
     ROLEID_MAP,
-    get_user_mapping,
 )
 from core.bot_core import KumaBot
 
@@ -18,28 +16,22 @@ MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
 
 class TaskReminder(commands.Cog):
     def __init__(self, bot: KumaBot):
-        self.user_mapping = get_user_mapping()
         self.bot = bot
         self.completed_states = "已完成"
 
-    def _access_data(self):
-        WORKSHEET_NAME = "工作表"
+    async def _fetch_data(self):
         try:
             # Create a Google Sheets API service
-            service = build("sheets", "v4", credentials=GOOGLESHEET_CREDS)
-            result = (
-                service.spreadsheets()
-                .values()
-                .get(spreadsheetId=GOOGLESHEET_ID, range=WORKSHEET_NAME)
-                .execute()
-            )
-            service.close()
+            agc = await AGCM.authorize()
+            ss = await agc.open_by_key(GOOGLESHEET_ID)
+            worksheet = await ss.get_worksheet(1)
+            result = await worksheet.get_all_values()
         except Exception as e:
             print(f"Error accessing Google Sheet: {e}")
             return False
 
-        self.title = result.get("values", [])[0]
-        self.values = result.get("values", [])[1:]
+        self.title = result[0]
+        self.values = result[1:]
         return True
 
     # TODO: Add group query function
@@ -49,8 +41,9 @@ class TaskReminder(commands.Cog):
     async def get_user_todo_tasks(
         self, interaction: discord.Interaction, member: discord.Member = None
     ):
+        is_data_fetched = await self._fetch_data()
         # Ensure latest data
-        if not self._access_data():
+        if not is_data_fetched:
             await interaction.response.send_message(
                 "無法連線至 Google Sheet，請稍後再試。", ephemeral=True
             )
@@ -61,7 +54,7 @@ class TaskReminder(commands.Cog):
         target_role_ids = [role.id for role in target.roles]
 
         # Try to get the name used in the sheet for this discord id
-        user_mapping = self.user_mapping.get(target_id, None)
+        user_mapping = self.bot.user_mapping.get(target_id, None)
         mapped_name = user_mapping.get("name", None) if user_mapping else None
         if mapped_name is None:
             await interaction.response.send_message(
