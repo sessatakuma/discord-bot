@@ -4,6 +4,7 @@ from discord.ext import commands
 from config.settings import COGS
 from config.googlesheet import get_user_mapping
 
+
 class KumaBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,7 +35,6 @@ class KumaBot(commands.Bot):
         if self.user_mapping is None:
             self.user_mapping = await get_user_mapping()
             print(f"✅ {len(self.user_mapping)} users mapping loaded")
-
 
     async def close(self):
         """Override close to ensure aiohttp session is closed"""

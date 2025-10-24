@@ -15,6 +15,7 @@ assert GOOGLESHEET_PRIVATE_KEY_ID, "GOOGLESHEET_PRIVATE_KEY_ID is not set"
 GOOGLESHEET_CLIENT_ID = os.getenv("GOOGLESHEET_CLIENT_ID")
 assert GOOGLESHEET_CLIENT_ID, "GOOGLESHEET_CLIENT_ID is not set"
 
+
 def get_creds():
     GOOGLESHEET_CREDENTIALS = {
         "type": "service_account",
@@ -30,13 +31,13 @@ def get_creds():
         "universe_domain": "googleapis.com",
     }
     return service_account.Credentials.from_service_account_info(
-        GOOGLESHEET_CREDENTIALS, scopes=[
-            "https://www.googleapis.com/auth/spreadsheets"
-        ]
+        GOOGLESHEET_CREDENTIALS, scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
+
 
 # A manager
 AGCM = AsyncioGspreadClientManager(get_creds)
+
 
 async def get_user_mapping():
     # Get user data from Google Sheets
@@ -44,7 +45,7 @@ async def get_user_mapping():
         agc = await AGCM.authorize()
         ss = await agc.open_by_key(GOOGLESHEET_ID)
         worksheet = await ss.get_worksheet(0)
-        result = await worksheet.get_values(range_name='F:H')
+        result = await worksheet.get_values(range_name="F:H")
         result = result[1:]
     except Exception as e:
         print(f"⚠️ Error accessing Google Sheet for user mapping: {e}")
