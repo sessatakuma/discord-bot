@@ -9,7 +9,7 @@ class KumaBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session: aiohttp.ClientSession | None = None
-        self.user_mapping: dict[str, list] | None = None
+        self.user_mapping: dict[str, dict] | None = None
 
     async def setup_hook(self):
         # Load cogs
