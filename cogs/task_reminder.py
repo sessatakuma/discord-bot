@@ -20,7 +20,6 @@ class TaskReminder(commands.Cog):
         self.completed_states = "已完成"
 
     async def _fetch_data(self):
-        WORKSHEET_NAME = "工作表"
         try:
             # Create a Google Sheets API service
             agc = await AGCM.authorize()
