@@ -2,12 +2,13 @@ import aiohttp
 from discord.ext import commands
 
 from config.settings import COGS
-
+from config.googlesheet import get_user_mapping
 
 class KumaBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session: aiohttp.ClientSession | None = None
+        self.user_mapping: dict[str, List] | None = None
 
     async def setup_hook(self):
         # Load cogs
@@ -28,6 +29,12 @@ class KumaBot(commands.Bot):
         if self.session is None:
             self.session = aiohttp.ClientSession()
             print("🌐 Aiohttp session created")
+
+        # Get user mapping
+        if self.user_mapping is None:
+            self.user_mapping = await get_user_mapping()
+            print(f"✅ {len(self.user_mapping)} users mapping loaded")
+
 
     async def close(self):
         """Override close to ensure aiohttp session is closed"""

@@ -1,9 +1,7 @@
 import os
-
 from dotenv import load_dotenv
 from google.oauth2 import service_account
-from googleapiclient.discovery import build
-
+from gspread_asyncio import AsyncioGspreadClientManager
 from config.settings import RoleId
 
 load_dotenv()
@@ -17,47 +15,39 @@ assert GOOGLESHEET_PRIVATE_KEY_ID, "GOOGLESHEET_PRIVATE_KEY_ID is not set"
 GOOGLESHEET_CLIENT_ID = os.getenv("GOOGLESHEET_CLIENT_ID")
 assert GOOGLESHEET_CLIENT_ID, "GOOGLESHEET_CLIENT_ID is not set"
 
-GOOGLESHEET_CREDENTIALS = {
-    "type": "service_account",
-    "project_id": "sessatakuma-471415",
-    "private_key_id": GOOGLESHEET_PRIVATE_KEY_ID,
-    "private_key": GOOGLESHEET_PRIVATE_KEY,
-    "client_email": "get-sheet-bot@sessatakuma-471415.iam.gserviceaccount.com",
-    "client_id": GOOGLESHEET_CLIENT_ID,
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/get-sheet-bot%40sessatakuma-471415.iam.gserviceaccount.com",
-    "universe_domain": "googleapis.com",
-}
+def get_creds():
+    GOOGLESHEET_CREDENTIALS = {
+        "type": "service_account",
+        "project_id": "sessatakuma-471415",
+        "private_key_id": GOOGLESHEET_PRIVATE_KEY_ID,
+        "private_key": GOOGLESHEET_PRIVATE_KEY,
+        "client_email": "get-sheet-bot@sessatakuma-471415.iam.gserviceaccount.com",
+        "client_id": GOOGLESHEET_CLIENT_ID,
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/get-sheet-bot%40sessatakuma-471415.iam.gserviceaccount.com",
+        "universe_domain": "googleapis.com",
+    }
+    return service_account.Credentials.from_service_account_info(
+        GOOGLESHEET_CREDENTIALS, scopes=[
+            "https://www.googleapis.com/auth/spreadsheets"
+        ]
+    )
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-GOOGLESHEET_CREDS = service_account.Credentials.from_service_account_info(
-    GOOGLESHEET_CREDENTIALS, scopes=SCOPES
-)
+# A manager
+AGCM = AsyncioGspreadClientManager(get_creds)
 
-ROLEID_MAP = {
-    "テック班": RoleId.tech.value,
-    "デザイン班": RoleId.design.value,
-    "コンテンツ班": RoleId.content.value,
-    "スタッフ": RoleId.staff.value,
-}
-
-
-def get_user_mapping():
-    service = build("sheets", "v4", credentials=GOOGLESHEET_CREDS)
+async def get_user_mapping():
     # Get user data from Google Sheets
-    worksheet_name = "成員!F:H"
     try:
-        result = (
-            service.spreadsheets()
-            .values()
-            .get(spreadsheetId=GOOGLESHEET_ID, range=worksheet_name)
-            .execute()
-            .get("values", [])[1:]
-        )
+        agc = await AGCM.authorize()
+        ss = await agc.open_by_key(GOOGLESHEET_ID)
+        worksheet = await ss.get_worksheet(0)
+        result = await worksheet.get_values(range_name='F:H')
+        result = result[1:]
     except Exception as e:
-        print(f"Error accessing Google Sheet for user mapping: {e}")
+        print(f"⚠️ Error accessing Google Sheet for user mapping: {e}")
         result = []
     # Create a mapping for users
     USER_MAPPING = {}
@@ -67,6 +57,12 @@ def get_user_mapping():
         github_id = row[2] if len(row) > 2 else None
         if discord_id and name_in_sheet:
             USER_MAPPING[discord_id] = {"name": name_in_sheet, "github": github_id}
-    print(f"Loaded USER_MAPPING for {len(USER_MAPPING)} users:")
-    service.close()
     return USER_MAPPING
+
+
+ROLEID_MAP = {
+    "テック班": RoleId.tech.value,
+    "デザイン班": RoleId.design.value,
+    "コンテンツ班": RoleId.content.value,
+    "スタッフ": RoleId.staff.value,
+}
