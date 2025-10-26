@@ -65,14 +65,11 @@ async def setup(bot: KumaBot):
 ```
 
 ## Check the project
-First download the ruff tool with uv:
+Since the package of ruff and mypy are already installed in dev group,
+one can directly execute the following command to format and check the project:
 ```bash
-uv pip install ruff mypy
+ruff format . --check # Check format
+ruff check .          # Check linter
+mypy .                # Check type
 ```
-Then execute the following command to format the project:
-```bash
-ruff format . --check
-ruff check .
-mypy .
-```
-For more detailed setting with IDE (e.g. VScode), please refer to manul.
+For more detailed setting with IDE (e.g. VScode), please refer to our manul.
