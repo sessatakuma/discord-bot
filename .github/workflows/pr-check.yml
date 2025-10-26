@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  pr-check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -33,21 +33,21 @@ jobs:
         run: |
           for file in $(find . -type f \( -name "*.yml" -o -name "*.yaml" \) -not -path "./.git/*" -not -path "./.venv/*"); do
             echo "Checking: $file"
-            python -c "import yaml; yaml.safe_load(open('$file'))"
+            uv run python -c "import yaml; yaml.safe_load(open('$file'))"
           done
 
       - name: Check JSON syntax
         run: |
           for file in $(find . -type f -name "*.json" -not -path "./.git/*" -not -path "./.venv/*"); do
             echo "Checking: $file"
-            python -c "import json; json.load(open('$file'))"
+            uv run python -c "import json; json.load(open('$file'))"
           done
 
       - name: Check TOML syntax
         run: |
           for file in $(find . -type f -name "*.toml" -not -path "./.git/*" -not -path "./.venv/*"); do
             echo "Checking: $file"
-            python -c "import toml; toml.load(open('$file'))"
+            uv run python -c "import toml; toml.load(open('$file'))"
           done
 
       - name: Check Ruff Formatter
