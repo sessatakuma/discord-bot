@@ -1,0 +1,57 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: "3.11"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
+          uv pip install ruff pyright pyyaml toml
+
+      - name: Check for merge conflicts
+        run: |
+          ! grep -n -r -E '^(<<<<<<<|=======|>>>>>>>)' .
+
+      - name: Check YAML syntax
+        run: |
+          find . -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | xargs -0 -I {} python -c "import yaml, sys; print(f'Checking YAML: {sys.argv[1]}'); yaml.safe_load(open(sys.argv[1]))" {}
+
+      - name: Check JSON syntax
+        run: |
+          find . -type f -name "*.json" -print0 | xargs -0 -I {} python -c "import json, sys; print(f'Checking JSON: {sys.argv[1]}'); json.load(open(sys.argv[1]))" {}
+
+      - name: Check TOML syntax
+        run: |
+          find . -type f -name "*.toml" -print0 | xargs -0 -I {} python -c "import toml, sys; print(f'Checking TOML: {sys.argv[1]}'); toml.load(open(sys.argv[1]))" {}
+
+      - name: Check Ruff Formatter
+        run: |
+          ruff format . --check
+
+      - name: Check Ruff Linter
+        run: |
+          ruff check .
+
+      - name: Check Mypy
+        run: |
+          mypy .
