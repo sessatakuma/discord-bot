@@ -6,17 +6,19 @@ from config.settings import RoleId
 
 load_dotenv()
 
-GOOGLESHEET_ID = os.getenv("GOOGLESHEET_ID")
+GOOGLESHEET_ID: str = os.getenv("GOOGLESHEET_ID", "")
 assert GOOGLESHEET_ID, "GOOGLESHEET_ID is not set"
-GOOGLESHEET_PRIVATE_KEY = os.getenv("GOOGLESHEET_PRIVATE_KEY").replace("\\n", "\n")
+GOOGLESHEET_PRIVATE_KEY: str = os.getenv("GOOGLESHEET_PRIVATE_KEY", "").replace(
+    "\\n", "\n"
+)
 assert GOOGLESHEET_PRIVATE_KEY, "GOOGLESHEET_PRIVATE_KEY is not set"
-GOOGLESHEET_PRIVATE_KEY_ID = os.getenv("GOOGLESHEET_PRIVATE_KEY_ID")
+GOOGLESHEET_PRIVATE_KEY_ID: str = os.getenv("GOOGLESHEET_PRIVATE_KEY_ID", "")
 assert GOOGLESHEET_PRIVATE_KEY_ID, "GOOGLESHEET_PRIVATE_KEY_ID is not set"
-GOOGLESHEET_CLIENT_ID = os.getenv("GOOGLESHEET_CLIENT_ID")
+GOOGLESHEET_CLIENT_ID: str = os.getenv("GOOGLESHEET_CLIENT_ID", "")
 assert GOOGLESHEET_CLIENT_ID, "GOOGLESHEET_CLIENT_ID is not set"
 
 
-def get_creds():
+def get_creds() -> service_account.Credentials:
     GOOGLESHEET_CREDENTIALS = {
         "type": "service_account",
         "project_id": "sessatakuma-471415",
@@ -30,16 +32,18 @@ def get_creds():
         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/get-sheet-bot%40sessatakuma-471415.iam.gserviceaccount.com",
         "universe_domain": "googleapis.com",
     }
-    return service_account.Credentials.from_service_account_info(
+    credentials = service_account.Credentials.from_service_account_info(
         GOOGLESHEET_CREDENTIALS, scopes=["https://www.googleapis.com/auth/spreadsheets"]
-    )
+    )  # type: ignore
+    assert isinstance(credentials, service_account.Credentials)
+    return credentials
 
 
 # A manager
 AGCM = AsyncioGspreadClientManager(get_creds)
 
 
-async def get_user_mapping():
+async def get_user_mapping() -> dict[str, dict[str, str]]:
     # Get user data from Google Sheets
     try:
         agc = await AGCM.authorize()

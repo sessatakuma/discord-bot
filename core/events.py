@@ -1,10 +1,11 @@
 from cogs.event_reminder import EventReminder
 from core.bot_core import KumaBot
+from discord import ScheduledEvent
 
 
-def setup_events(bot: KumaBot):
+def setup_events(bot: KumaBot) -> None:
     @bot.event
-    async def on_ready():
+    async def on_ready() -> None:
         print(f"🐻‍❄️ {bot.user} is now online!")
 
         # Sync slash commands
@@ -15,7 +16,7 @@ def setup_events(bot: KumaBot):
             print(f"❌ Slash command sync failed: {e}")
 
         # Setup event scheduler
-        event_reminder: EventReminder = bot.get_cog("EventReminder")
+        event_reminder: EventReminder = bot.get_cog("EventReminder")  # type: ignore
         if event_reminder:
             print("🔔 Setting up event scheduler...")
             await event_reminder.update()
@@ -25,19 +26,21 @@ def setup_events(bot: KumaBot):
         print("💡 Press Ctrl+C to stop the bot")
 
     @bot.event
-    async def on_scheduled_event_create(event):
-        event_reminder: EventReminder = bot.get_cog("EventReminder")
+    async def on_scheduled_event_create(event: ScheduledEvent) -> None:
+        event_reminder: EventReminder = bot.get_cog("EventReminder")  # type: ignore
         if event_reminder:
             await event_reminder.update()
 
     @bot.event
-    async def on_scheduled_event_update(before, after):
-        event_reminder: EventReminder = bot.get_cog("EventReminder")
+    async def on_scheduled_event_update(
+        before: ScheduledEvent, after: ScheduledEvent
+    ) -> None:
+        event_reminder: EventReminder = bot.get_cog("EventReminder")  # type: ignore
         if event_reminder:
             await event_reminder.update()
 
     @bot.event
-    async def on_scheduled_event_delete(event):
-        event_reminder: EventReminder = bot.get_cog("EventReminder")
+    async def on_scheduled_event_delete(event: ScheduledEvent) -> None:
+        event_reminder: EventReminder = bot.get_cog("EventReminder")  # type: ignore
         if event_reminder:
             await event_reminder.update()

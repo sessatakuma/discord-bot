@@ -9,15 +9,20 @@ from config.settings import API_URL
 from core.bot_core import KumaBot
 
 
-async def usage_query_handler(interaction, words, site):
-    await fetch_usage(interaction, words, site)
+async def usage_query_handler(
+    interaction: Interaction,
+    words: str,
+    site: Literal["NLB", "NLT"],
+    session: aiohttp.ClientSession,
+) -> None:
+    await fetch_usage(interaction, words, site, session)
 
 
 class UsageQueryCog(commands.Cog):
     def __init__(self, bot: KumaBot):
         self.bot = bot
 
-    def cog_unload(self):
+    async def cog_unload(self) -> None:
         """Clean up if necessary when cog is unloaded"""
         pass
 
@@ -35,11 +40,11 @@ class UsageQueryCog(commands.Cog):
     @app_commands.rename(word="單字", site="來源")
     async def usage_query(
         self, interaction: Interaction, word: str, site: Literal["NLB", "NLT"]
-    ):
+    ) -> None:
         await fetch_usage(interaction, word, site, self.bot.session)
 
 
-async def setup(bot: KumaBot):
+async def setup(bot: KumaBot) -> None:
     await bot.add_cog(UsageQueryCog(bot))
 
 
@@ -48,7 +53,7 @@ async def fetch_usage(
     words: str,
     site: Literal["NLB", "NLT"],
     session: aiohttp.ClientSession,
-):
+) -> None:
     word_list = [
         word.strip() for word in words.replace(",", " ").split() if word.strip()
     ]
@@ -67,20 +72,21 @@ async def fetch_usage(
                 if response.status == 200:
                     data = await response.json()
                     if data["status"] == 200:
-                        items: list = data["result"]
+                        items: list[dict[str, str]] = data["result"]
                         if len(items) == 1:
-                            return f"📚 **{items[0]['word']}**: {items[0]['url']}"
+                            message = f"📚 **{items[0]['word']}**: {items[0]['url']}"
                         elif len(items) > 1:
                             result_lines = [f"📚 **{word}**:"]
                             for item in items:
                                 result_lines.append(f"- {item['word']}: {item['url']}")
-                            return "\n".join(result_lines)
+                            message = "\n".join(result_lines)
                     elif data["status"] == 404:
-                        return f"❌ **{word}**: 找不到用法"
+                        message = f"❌ **{word}**: 找不到用法"
                     else:
-                        return f"❌ **{word}**: 查詢失敗\n錯誤訊息: {data['error']}"
+                        message = f"❌ **{word}**: 查詢失敗\n錯誤訊息: {data['error']}"
                 else:
-                    return f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}"
+                    message = f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}"
+            return message
         except Exception as e:
             print(f"usage_query error for '{word}': {e}")
             return f"❌ **{word}**: 發生錯誤"

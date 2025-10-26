@@ -21,3 +21,15 @@ indent-style = "space"
 
 [tool.ruff]
 line-length = 88
+
+[tool.mypy]
+strict = true
+namespace_packages = true
+warn_unused_ignores = false
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "pyright>=1.1.407",
+]

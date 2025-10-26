@@ -3,7 +3,7 @@ import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
-
+from typing import Optional
 from config.googlesheet import (
     AGCM,
     GOOGLESHEET_ID,
@@ -15,11 +15,11 @@ MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
 
 
 class TaskReminder(commands.Cog):
-    def __init__(self, bot: KumaBot):
+    def __init__(self, bot: KumaBot) -> None:
         self.bot = bot
         self.completed_states = "已完成"
 
-    async def _fetch_data(self):
+    async def _fetch_data(self) -> bool:
         try:
             # Create a Google Sheets API service
             agc = await AGCM.authorize()
@@ -39,8 +39,8 @@ class TaskReminder(commands.Cog):
     @app_commands.command(name="todo", description="查詢成員的未完成任務")
     @app_commands.describe(member="查詢的成員（預設：自己）")
     async def get_user_todo_tasks(
-        self, interaction: discord.Interaction, member: discord.Member = None
-    ):
+        self, interaction: discord.Interaction, member: Optional[discord.Member] = None
+    ) -> None:
         is_data_fetched = await self._fetch_data()
         # Ensure latest data
         if not is_data_fetched:
@@ -51,6 +51,7 @@ class TaskReminder(commands.Cog):
 
         target = member or interaction.user
         target_id = str(target.id)
+        assert isinstance(target, discord.Member), "Target must be a Member"
         target_role_ids = [role.id for role in target.roles]
 
         # Try to get the name used in the sheet for this discord id
@@ -113,7 +114,9 @@ class TaskReminder(commands.Cog):
         # 1. Priority
         # 2. Due date
         # 3. Status
-        def sort_key(task):
+        def sort_key(
+            task: tuple[str, str, datetime.datetime, str, str],
+        ) -> tuple[int, datetime.datetime, str]:
             priority_order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
             priority = priority_order.get(
                 task[1], 99
@@ -145,5 +148,5 @@ class TaskReminder(commands.Cog):
         await interaction.response.send_message(message, ephemeral=True)
 
 
-async def setup(bot: KumaBot):
+async def setup(bot: KumaBot) -> None:
     await bot.add_cog(TaskReminder(bot))

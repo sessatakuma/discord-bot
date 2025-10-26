@@ -12,12 +12,12 @@ class ControlCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="ping", description="測試機器人是否正常運作")
-    async def ping(self, interaction: Interaction):
+    async def ping(self, interaction: Interaction) -> None:
         await interaction.response.send_message("🏓 pong!", ephemeral=True)
 
     @app_commands.command(name="reload", description="Hot reload all Cog modules")
     @app_commands.checks.has_role(RoleId.tech.value)
-    async def reload_all_cogs(self, interaction: Interaction):
+    async def reload_all_cogs(self, interaction: Interaction) -> None:
         """Hot reload all cogs"""
         await interaction.response.defer()
 
@@ -52,7 +52,7 @@ class ControlCog(commands.Cog):
     @reload_all_cogs.error
     async def reload_error(
         self, interaction: Interaction, error: app_commands.AppCommandError
-    ):
+    ) -> None:
         """Handle reload command errors"""
         if isinstance(error, app_commands.MissingAnyRole):
             await interaction.response.send_message(
@@ -71,5 +71,5 @@ class ControlCog(commands.Cog):
                 await interaction.response.send_message(error_msg, ephemeral=True)
 
 
-async def setup(bot: KumaBot):
+async def setup(bot: KumaBot) -> None:
     await bot.add_cog(ControlCog(bot))
