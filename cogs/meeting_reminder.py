@@ -40,14 +40,17 @@ class MeetingReminder(commands.Cog):
             self.scheduler.shutdown()
 
     async def _send_reminder(self) -> None:
-        # Only remind on the first day of the last week of the month
-        if is_first_day_of_last_week():
-            channel = self.bot.get_channel(GeneralChannelId.staff.value)
-            assert isinstance(channel, discord.TextChannel)
-            await channel.send(
-                f"<@&{RoleId.staff.value}> ⏰ 本月最後一週了！ \
-                    請尚未填寫的人填寫下個月的開會時間表，謝謝！"
-            )
+        try:
+            # Only remind on the first day of the last week of the month
+            if is_first_day_of_last_week():
+                channel = self.bot.get_channel(GeneralChannelId.staff.value)
+                assert isinstance(channel, discord.TextChannel)
+                await channel.send(
+                    f"<@&{RoleId.staff.value}> ⏰ 本月最後一週了！ \
+                        請尚未填寫的人填寫下個月的開會時間表，謝謝！"
+                )
+        except Exception as e:
+            print(f"Error sending meeting reminder: {e}")
 
     # /meeting remind
     # @meeting_cmd.command(name="remind", description="提醒填寫下個月開會時間表")

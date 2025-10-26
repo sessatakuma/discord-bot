@@ -7,7 +7,6 @@ from discord import Interaction, app_commands
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageDraw import ImageDraw as ImageDrawType
-from typing import Optional
 
 from config.settings import API_URL
 from core.bot_core import KumaBot
@@ -305,7 +304,7 @@ def _generate_image(
 
 async def text2png(
     query: str, session: aiohttp.ClientSession, draw_box: bool = False
-) -> tuple[bool, Optional[io.BufferedIOBase]]:
+) -> tuple[bool, io.BufferedIOBase | None]:
     result = await get_furigana_via_api(query, session)
     if not result:
         print("API 讀取失敗")
@@ -338,16 +337,18 @@ async def setup(bot: KumaBot) -> None:
 async def mark(
     interaction: Interaction, text: str, session: aiohttp.ClientSession
 ) -> None:
-    if len(text) < 2:
-        await interaction.response.send_message("請輸入要產生圖片的文字。")
-        return
-    print("Generating image for:", text)
-    await interaction.response.defer()
-    success, buffer = await text2png(text, session, draw_box=False)
-    if success:
+    try:
+        if len(text) < 2:
+            await interaction.response.send_message("請輸入要產生圖片的文字。")
+            return
+        print("Generating image for:", text)
+        await interaction.response.defer()
+        success, buffer = await text2png(text, session, draw_box=False)
+        assert success is True, "Image generation failed"
         assert buffer, "Buffer should not be None when success is True"
         await interaction.followup.send(
             file=discord.File(buffer, filename="marked_text.png")
         )
-    else:
-        await interaction.followup.send("圖片生成失敗")
+    except Exception as e:
+        print(f"Error in mark function: {e}")
+        await interaction.followup.send(f"發生錯誤：{e}")
