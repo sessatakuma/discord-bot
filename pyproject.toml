@@ -15,6 +15,16 @@ dependencies = [
     "pillow==11.3.0",
     "python-dotenv>=1.1.1",
 ]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "pyyaml>=6.0.3",
+    "ruff>=0.14.2",
+    "toml>=0.10.2",
+]
+
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
@@ -30,6 +40,3 @@ strict = true
 namespace_packages = true
 warn_unused_ignores = false
 ignore_missing_imports = true
-
-[dependency-groups]
-dev = []
