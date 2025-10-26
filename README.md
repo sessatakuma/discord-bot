@@ -72,4 +72,4 @@ ruff format . --check # Check format
 ruff check .          # Check linter
 mypy .                # Check type
 ```
-For more detailed setting with IDE (e.g. VScode), please refer to our manul.
+For more detailed setting with IDE (e.g. VScode), please refer to our manual.
