@@ -83,7 +83,8 @@ async def fetch_dict_link(
                     elif data["status"] == 404:
                         return f"❌ **{word}**: 查無結果"
                     else:
-                        return f"❌ **{word}**: 查詢失敗，錯誤內容({data['status']}: {data['error'].get('message', '未知錯誤')})"
+                        return f"❌ **{word}**: 查詢失敗，錯誤內容({data['status']}: \
+                            {data['error'].get('message', '未知錯誤')})"
                 else:
                     return f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}"
         except Exception as e:

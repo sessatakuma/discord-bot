@@ -84,7 +84,8 @@ class EventReminder(commands.Cog):
                 self.scheduled_events, key=lambda e: e.start_time
             )
             print(
-                f"📅 Scheduled events: {[event.name for event in self.scheduled_events]}"
+                f"📅 Scheduled events: \
+                    {[event.name for event in self.scheduled_events]}"
             )
 
     def _schedule_event_reminders(
@@ -164,7 +165,8 @@ class EventReminder(commands.Cog):
             )
             if role_name and interaction.user.get_role(RoleId[role_name].value):
                 lines.append(
-                    f"• {event.name} (開始於: <t:{int(event.start_time.timestamp())}:F>)"
+                    f"• {event.name} \
+                        (開始於: <t:{int(event.start_time.timestamp())}:F>)"
                 )
         msg = "已排程提醒的活動：\n" + "\n".join(lines)
         await interaction.response.send_message(msg, ephemeral=True)

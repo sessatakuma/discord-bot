@@ -63,7 +63,8 @@ class TaskReminder(commands.Cog):
             )
             return
 
-        # header order (0-based): 任務, 優先順序, 負責人, 組別, 狀態, 開始日期, 結束日期, 文件, 附註
+        # header order (0-based):
+        # 任務, 優先順序, 負責人, 組別, 狀態, 開始日期, 結束日期, 文件, 附註
         title_idx = 0
         priority_idx = 1  # P0, P1, P2, P3
         assignee_idx = 2  # User name

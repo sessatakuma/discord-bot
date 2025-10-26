@@ -22,6 +22,9 @@ indent-style = "space"
 [tool.ruff]
 line-length = 88
 
+[tool.ruff.lint]
+select = ["E", "F", "N"]
+
 [tool.mypy]
 strict = true
 namespace_packages = true

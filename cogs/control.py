@@ -24,7 +24,8 @@ class ControlCog(commands.Cog):
         success_count = 0
         failed_cogs = []
 
-        # Use asyncio.gather with return_exceptions=True to continue even if some cogs fail
+        # Use asyncio.gather with return_exceptions=True to continue
+        # even if some cogs fail
         results = await asyncio.gather(
             *[self.bot.reload_extension(cog_name) for cog_name in COGS],
             return_exceptions=True,
@@ -41,7 +42,8 @@ class ControlCog(commands.Cog):
         if failed_cogs:
             failed_msg = "\n".join([f"❌ {failed}" for failed in failed_cogs])
             await interaction.followup.send(
-                f"✅ Successfully reloaded {success_count}/{len(COGS)} Cogs!\n\n**Failed:**\n{failed_msg}",
+                f"✅ Successfully reloaded {success_count}/{len(COGS)} Cogs! \
+                    \n\n**Failed:**\n{failed_msg}",
                 ephemeral=True,
             )
         else:

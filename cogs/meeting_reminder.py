@@ -45,7 +45,8 @@ class MeetingReminder(commands.Cog):
             channel = self.bot.get_channel(GeneralChannelId.staff.value)
             assert isinstance(channel, discord.TextChannel)
             await channel.send(
-                f"<@&{RoleId.staff.value}> ⏰ 本月最後一週了！請尚未填寫的人填寫下個月的開會時間表，謝謝！"
+                f"<@&{RoleId.staff.value}> ⏰ 本月最後一週了！ \
+                    請尚未填寫的人填寫下個月的開會時間表，謝謝！"
             )
 
     # /meeting remind
@@ -53,10 +54,15 @@ class MeetingReminder(commands.Cog):
     # async def meeting_remind(self, interaction: Interaction):
     #     channel = self.bot.get_channel(GeneralChannelId.staff.value)
     #     if channel:
-    #         await channel.send(f"<@&{RoleId.staff.value}> ⏰ 請尚未填寫的人填寫下個月的開會時間表，謝謝！")
-    #         await interaction.response.send_message("提醒訊息已發送！", ephemeral=True)
+    #         await channel.send(f"<@&{RoleId.staff.value}> ⏰ \
+    #                               請尚未填寫的人填寫下個月的開會時間表，謝謝！")
+    #         await interaction.response.send_message(
+    #             "提醒訊息已發送！", ephemeral=True
+    #         )
     #     else:
-    #         await interaction.response.send_message("找不到指定頻道！", ephemeral=True)
+    #         await interaction.response.send_message(
+    #             "找不到指定頻道！", ephemeral=True
+    #         )
 
 
 async def setup(bot: KumaBot) -> None:
