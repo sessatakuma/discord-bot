@@ -5,12 +5,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.getenv("BOT_TOKEN")
-assert TOKEN is not None, "BOT_TOKEN environment variable is not set"
-API_URL = os.getenv("API_URL")
-assert API_URL is not None, "API_URL environment variable is not set"
+TOKEN: str = os.getenv("BOT_TOKEN", "")
+assert TOKEN, "BOT_TOKEN environment variable is not set"
+API_URL: str = os.getenv("API_URL", "")
+assert API_URL, "API_URL environment variable is not set"
 
-GUILD_ID = 1265707637836615730
+GUILD_ID: int = 1265707637836615730
 
 
 class RoleId(Enum):

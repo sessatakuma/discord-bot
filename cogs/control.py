@@ -12,19 +12,20 @@ class ControlCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="ping", description="測試機器人是否正常運作")
-    async def ping(self, interaction: Interaction):
+    async def ping(self, interaction: Interaction) -> None:
         await interaction.response.send_message("🏓 pong!", ephemeral=True)
 
     @app_commands.command(name="reload", description="Hot reload all Cog modules")
     @app_commands.checks.has_role(RoleId.tech.value)
-    async def reload_all_cogs(self, interaction: Interaction):
+    async def reload_all_cogs(self, interaction: Interaction) -> None:
         """Hot reload all cogs"""
         await interaction.response.defer()
 
         success_count = 0
         failed_cogs = []
 
-        # Use asyncio.gather with return_exceptions=True to continue even if some cogs fail
+        # Use asyncio.gather with return_exceptions=True to continue
+        # even if some cogs fail
         results = await asyncio.gather(
             *[self.bot.reload_extension(cog_name) for cog_name in COGS],
             return_exceptions=True,
@@ -41,7 +42,8 @@ class ControlCog(commands.Cog):
         if failed_cogs:
             failed_msg = "\n".join([f"❌ {failed}" for failed in failed_cogs])
             await interaction.followup.send(
-                f"✅ Successfully reloaded {success_count}/{len(COGS)} Cogs!\n\n**Failed:**\n{failed_msg}",
+                f"✅ Successfully reloaded {success_count}/{len(COGS)} Cogs! \
+                    \n\n**Failed:**\n{failed_msg}",
                 ephemeral=True,
             )
         else:
@@ -52,7 +54,7 @@ class ControlCog(commands.Cog):
     @reload_all_cogs.error
     async def reload_error(
         self, interaction: Interaction, error: app_commands.AppCommandError
-    ):
+    ) -> None:
         """Handle reload command errors"""
         if isinstance(error, app_commands.MissingAnyRole):
             await interaction.response.send_message(
@@ -71,5 +73,5 @@ class ControlCog(commands.Cog):
                 await interaction.response.send_message(error_msg, ephemeral=True)
 
 
-async def setup(bot: KumaBot):
+async def setup(bot: KumaBot) -> None:
     await bot.add_cog(ControlCog(bot))

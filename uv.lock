@@ -327,6 +327,9 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.1" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "discord-py"
 version = "2.6.4"

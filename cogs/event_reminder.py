@@ -6,12 +6,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 from discord import app_commands
 from discord.ext import commands
+from discord.channel import StageChannel, VoiceChannel
 
 from config.settings import GUILD_ID, GeneralChannelId, MeetingChannelId, RoleId
 from core.bot_core import KumaBot
 
 
-def get_role_name(channel_name: str) -> str:
+def get_role_name(channel: VoiceChannel | StageChannel | None) -> str:
+    channel_name = channel.name if channel else ""
     if "🗿" in channel_name:
         return "staff"
     elif "🎨" in channel_name:
@@ -20,7 +22,7 @@ def get_role_name(channel_name: str) -> str:
         return "tech"
     elif "🏫" in channel_name:
         return "content"
-    return None
+    return ""
 
 
 class EventReminder(commands.Cog):
@@ -33,18 +35,18 @@ class EventReminder(commands.Cog):
         self.update_events_lock = asyncio.Lock()
         self.scheduler.start()
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         """Initialize scheduler when cog is loaded"""
         if self.bot.is_ready():
             print("🔔 Setting up event scheduler...")
             await self.update()
 
-    def cog_unload(self):
+    async def cog_unload(self) -> None:
         """Clean up scheduler when cog is unloaded"""
         if self.scheduler.running:
             self.scheduler.shutdown()
 
-    async def update(self):
+    async def update(self) -> None:
         guild = self.bot.get_guild(GUILD_ID)
         if guild is None:
             return
@@ -52,38 +54,45 @@ class EventReminder(commands.Cog):
         async with self.update_events_lock:
             try:
                 events = await guild.fetch_scheduled_events()
+
+                # Clear existing scheduled jobs and events
+                self.scheduler.remove_all_jobs()
+                self.scheduled_events.clear()
+
+                for event in events:
+                    if event.status != discord.EventStatus.scheduled:
+                        continue
+                    if not (role_name := get_role_name(event.channel)):
+                        continue
+                    if not (
+                        channel := guild.get_channel(GeneralChannelId[role_name].value)
+                    ):
+                        continue
+
+                    # Schedule reminder jobs for this event
+                    assert isinstance(channel, discord.TextChannel), (
+                        "Channel must be a TextChannel"
+                    )
+                    self._schedule_event_reminders(
+                        event, channel, RoleId[role_name].value
+                    )
+                    self.scheduled_events.append(event)
+
+                self.scheduled_events = sorted(
+                    self.scheduled_events, key=lambda e: e.start_time
+                )
+                print(
+                    f"📅 Scheduled events: \
+                        {[event.name for event in self.scheduled_events]}"
+                )
+
             except Exception as e:
                 print(f"Failed to fetch scheduled events: {e}")
                 return
 
-            # Clear existing scheduled jobs and events
-            self.scheduler.remove_all_jobs()
-            self.scheduled_events.clear()
-
-            for event in events:
-                if event.status != discord.EventStatus.scheduled:
-                    continue
-                if not (role_name := get_role_name(event.channel.name)):
-                    continue
-                if not (
-                    channel := guild.get_channel(GeneralChannelId[role_name].value)
-                ):
-                    continue
-
-                # Schedule reminder jobs for this event
-                self._schedule_event_reminders(event, channel, RoleId[role_name].value)
-                self.scheduled_events.append(event)
-
-            self.scheduled_events = sorted(
-                self.scheduled_events, key=lambda e: e.start_time
-            )
-            print(
-                f"📅 Scheduled events: {[event.name for event in self.scheduled_events]}"
-            )
-
     def _schedule_event_reminders(
         self, event: discord.ScheduledEvent, channel: discord.TextChannel, role_id: int
-    ):
+    ) -> None:
         """Schedule all reminder jobs for a single event"""
         start_time = event.start_time
         now = datetime.now(timezone.utc)
@@ -126,7 +135,7 @@ class EventReminder(commands.Cog):
         role_id: int,
         event: discord.ScheduledEvent,
         message: str,
-    ):
+    ) -> None:
         """Send a reminder message for an event"""
         try:
             await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) {message}")
@@ -135,54 +144,79 @@ class EventReminder(commands.Cog):
 
     # /event list
     @event_cmd.command(name="list", description="查詢已排程提醒的活動")
-    async def event_list(self, interaction: discord.Interaction):
-        if self.update_events_lock.locked():
-            await interaction.response.send_message(
-                "正在更新活動列表，請稍後再試。", ephemeral=True
-            )
-            return
-        if not self.scheduled_events:
-            await interaction.response.send_message(
-                "目前尚未有任何活動被加入提醒。", ephemeral=True
-            )
-            return
-        lines = []
-        for event in self.scheduled_events:
-            # Check if user has the role for this event
-            role_name = MeetingChannelId(event.channel.id).name
-            if role_name and interaction.user.get_role(RoleId[role_name].value):
-                lines.append(
-                    f"• {event.name} (開始於: <t:{int(event.start_time.timestamp())}:F>)"
+    async def event_list(self, interaction: discord.Interaction) -> None:
+        try:
+            if self.update_events_lock.locked():
+                await interaction.response.send_message(
+                    "正在更新活動列表，請稍後再試。", ephemeral=True
                 )
-        msg = "已排程提醒的活動：\n" + "\n".join(lines)
-        await interaction.response.send_message(msg, ephemeral=True)
+                return
+            if not self.scheduled_events:
+                await interaction.response.send_message(
+                    "目前尚未有任何活動被加入提醒。", ephemeral=True
+                )
+                return
+            lines = []
+            for event in self.scheduled_events:
+                # Check if user has the role for this event
+                assert isinstance(event.channel, discord.abc.GuildChannel), (
+                    "Event channel must be a GuildChannel"
+                )
+                role_name = MeetingChannelId(event.channel.id).name
+                assert isinstance(interaction.user, discord.Member), (
+                    "Interaction user must be a Member of the guild"
+                )
+                if role_name and interaction.user.get_role(RoleId[role_name].value):
+                    lines.append(
+                        f"• {event.name} \
+                            (開始於: <t:{int(event.start_time.timestamp())}:F>)"
+                    )
+            msg = "已排程提醒的活動：\n" + "\n".join(lines)
+            await interaction.response.send_message(msg, ephemeral=True)
+
+        except Exception as e:
+            print(f"Error in event_list command: {e}")
+            await interaction.response.send_message(f"發生錯誤：{e}", ephemeral=True)
 
     # /event today
     @event_cmd.command(name="today", description="查詢今天的活動")
-    async def event_today(self, interaction: discord.Interaction):
-        if self.update_events_lock.locked():
-            await interaction.response.send_message(
-                "正在更新活動列表，請稍後再試。", ephemeral=True
-            )
-            return
-        today = datetime.now(timezone.utc).date()
-        today_events = [
-            event for event in self.scheduled_events if event.start_time.date() == today
-        ]
-        if not today_events:
-            await interaction.response.send_message(
-                "今天沒有任何活動。", ephemeral=True
-            )
-            return
-        lines = []
-        for event in today_events:
-            # Check if user has the role for this event
-            role_name = MeetingChannelId(event.channel.id).name
-            if role_name and interaction.user.get_role(RoleId[role_name].value):
-                lines.append(f"• [{event.name}]({event.url})")
-        msg = "今天的活動：\n" + "\n".join(lines)
-        await interaction.response.send_message(msg, ephemeral=True)
+    async def event_today(self, interaction: discord.Interaction) -> None:
+        try:
+            if self.update_events_lock.locked():
+                await interaction.response.send_message(
+                    "正在更新活動列表，請稍後再試。", ephemeral=True
+                )
+                return
+            today = datetime.now(timezone.utc).date()
+            today_events = [
+                event
+                for event in self.scheduled_events
+                if event.start_time.date() == today
+            ]
+            if not today_events:
+                await interaction.response.send_message(
+                    "今天沒有任何活動。", ephemeral=True
+                )
+                return
+            lines = []
+            for event in today_events:
+                # Check if user has the role for this event
+                assert isinstance(event.channel, discord.abc.GuildChannel), (
+                    "Event channel must be a GuildChannel"
+                )
+                role_name = MeetingChannelId(event.channel.id).name
+                assert isinstance(interaction.user, discord.Member), (
+                    "Interaction user must be a Member of the guild"
+                )
+                if role_name and interaction.user.get_role(RoleId[role_name].value):
+                    lines.append(f"• [{event.name}]({event.url})")
+            msg = "今天的活動：\n" + "\n".join(lines)
+            await interaction.response.send_message(msg, ephemeral=True)
+
+        except Exception as e:
+            print(f"Error in event_today command: {e}")
+            await interaction.response.send_message(f"發生錯誤：{e}", ephemeral=True)
 
 
-async def setup(bot: KumaBot):
+async def setup(bot: KumaBot) -> None:
     await bot.add_cog(EventReminder(bot))
