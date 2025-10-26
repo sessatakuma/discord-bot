@@ -1,57 +1,66 @@
 name: PR Check
-
 on:
   pull_request:
-    branches: [ main ]
+    types: [opened, edited, synchronize]
+    branches: [main]
 
 jobs:
   build-and-test:
-
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: "3.11"
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install dependencies
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.cargo/bin:$PATH"
           uv sync
           uv pip install ruff mypy pyyaml toml
 
       - name: Check for merge conflicts
         run: |
-          ! grep -n -r -E '^(<<<<<<<|=======|>>>>>>>)' .
+          ! grep -r -E '^(<<<<<<<|=======|>>>>>>>)' --exclude-dir={.git,.venv,node_modules,__pycache__} .
 
       - name: Check YAML syntax
         run: |
-          find . -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | xargs -0 -I {} python -c "import yaml, sys; print(f'Checking YAML: {sys.argv[1]}'); yaml.safe_load(open(sys.argv[1]))" {}
+          for file in $(find . -type f \( -name "*.yml" -o -name "*.yaml" \) -not -path "./.git/*" -not -path "./.venv/*"); do
+            echo "Checking: $file"
+            python -c "import yaml; yaml.safe_load(open('$file'))"
+          done
 
       - name: Check JSON syntax
         run: |
-          find . -type f -name "*.json" -print0 | xargs -0 -I {} python -c "import json, sys; print(f'Checking JSON: {sys.argv[1]}'); json.load(open(sys.argv[1]))" {}
+          for file in $(find . -type f -name "*.json" -not -path "./.git/*" -not -path "./.venv/*"); do
+            echo "Checking: $file"
+            python -c "import json; json.load(open('$file'))"
+          done
 
       - name: Check TOML syntax
         run: |
-          find . -type f -name "*.toml" -print0 | xargs -0 -I {} python -c "import toml, sys; print(f'Checking TOML: {sys.argv[1]}'); toml.load(open(sys.argv[1]))" {}
+          for file in $(find . -type f -name "*.toml" -not -path "./.git/*" -not -path "./.venv/*"); do
+            echo "Checking: $file"
+            python -c "import toml; toml.load(open('$file'))"
+          done
 
       - name: Check Ruff Formatter
         run: |
-          ruff format . --check
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv run ruff format . --check
 
       - name: Check Ruff Linter
         run: |
-          ruff check .
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv run ruff check .
 
       - name: Check Mypy
         run: |
-          mypy .
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv run mypy .
