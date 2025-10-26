@@ -64,12 +64,15 @@ async def setup(bot: KumaBot):
 
 ```
 
-## Format the project
+## Check the project
 First download the ruff tool with uv:
 ```bash
-uv tool install ruff
+uv pip install ruff mypy
 ```
 Then execute the following command to format the project:
 ```bash
-ruff format .
+ruff format . --check
+ruff check .
+mypy .
 ```
+For more detailed setting with IDE (e.g. VScode), please refer to manul.
