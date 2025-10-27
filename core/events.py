@@ -1,6 +1,7 @@
+from discord import ScheduledEvent
+
 from cogs.event_reminder import EventReminder
 from core.bot_core import KumaBot
-from discord import ScheduledEvent
 
 
 def setup_events(bot: KumaBot) -> None:

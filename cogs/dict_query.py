@@ -1,9 +1,9 @@
 import asyncio
+from typing import TypedDict
 
 import aiohttp
 from discord import Interaction, app_commands
 from discord.ext import commands
-from typing import TypedDict
 
 from config.settings import API_URL
 from core.bot_core import KumaBot
