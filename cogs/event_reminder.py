@@ -5,8 +5,8 @@ import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 from discord import app_commands
-from discord.ext import commands
 from discord.channel import StageChannel, VoiceChannel
+from discord.ext import commands
 
 from config.settings import GUILD_ID, GeneralChannelId, MeetingChannelId, RoleId
 from core.bot_core import KumaBot
