@@ -18,4 +18,4 @@ jobs:
     name: Run Organization Basic PR Quality Checks
     uses: sessatakuma/org-workflows/.github/workflows/basic.yml@main
     secrets:
-      CHECKER_TOKEN: ${{ secrets.ORG_WORKFLOW_PAT }}
+      CHECKER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
