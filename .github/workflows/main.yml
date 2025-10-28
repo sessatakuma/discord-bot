@@ -20,3 +20,7 @@ jobs:
     uses: sessatakuma/org-workflows/.github/workflows/basic.yml@main
     secrets:
       CHECKER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  call-python-checks:
+    name: Run Organization Python Quality Checks
+    uses: sessatakuma/org-workflows/.github/workflows/python.yml@main
