@@ -24,7 +24,7 @@ class TaskReminder(commands.Cog):
             # Create a Google Sheets API service
             agc = await AGCM.authorize()
             ss = await agc.open_by_key(GOOGLESHEET_ID)
-            worksheet = await ss.get_worksheet(1)
+            worksheet = await ss.get_worksheet(2)
             result = await worksheet.get_all_values()
         except Exception as e:
             print(f"Error accessing Google Sheet: {e}")
