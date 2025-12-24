@@ -82,7 +82,9 @@ class TaskReminder(commands.Cog):
                     assignee == mapped_name and status != self.completed_states
                 ) or (
                     # Shared task for the role
-                    assignee == "" and role_id in target_role_ids
+                    assignee == ""
+                    and role_id in target_role_ids
+                    and status != self.completed_states
                 )
                 if add_task:
                     task_title = row[title_idx] if len(row) > title_idx else ""
