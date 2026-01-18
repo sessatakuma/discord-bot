@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from logging import getLogger
 from zoneinfo import ZoneInfo
 
 import discord
@@ -7,6 +8,8 @@ from discord.ext import commands
 
 from config.settings import GUILD_ID, RoleId, WeeklyUpdateChannelId
 from core.bot_core import KumaBot
+
+logger = getLogger(__name__)
 
 TAIWAN_TZ = ZoneInfo("Asia/Taipei")
 
@@ -41,7 +44,7 @@ class WeeklyUpdateReminder(commands.Cog):
         try:
             guild = self.bot.get_guild(GUILD_ID)
             if guild is None:
-                print("Error: Guild not found")
+                logger.error("Guild not found")
                 return
 
             # Send reminder to each group's weekly update channel
@@ -49,16 +52,16 @@ class WeeklyUpdateReminder(commands.Cog):
                 channel_id = WeeklyUpdateChannelId[role_name].value
                 channel = guild.get_channel(channel_id)
                 if channel is None:
-                    print(f"Error: Channel not found for {role_name}")
+                    logger.error(f"Channel not found for {role_name}")
                     continue
                 assert isinstance(channel, discord.TextChannel), (
                     "Channel must be a TextChannel"
                 )
 
                 await channel.send("[提醒] 今天是週一，請各位記得回報本週的進度狀況！")
-                print(f"Morning reminder sent to {role_name} channel")
+                logger.info(f"Morning reminder sent to {role_name} channel")
         except Exception as e:
-            print(f"Error sending morning reminder: {e}")
+            logger.error(f"Error sending morning reminder: {e}")
 
     async def _check_reported_members(self, channel: discord.TextChannel) -> set[int]:
         """Check which members have reported today by checking channel messages"""
@@ -81,7 +84,7 @@ class WeeklyUpdateReminder(commands.Cog):
                     reported_members.add(message.author.id)
 
         except Exception as e:
-            print(f"Error checking reported members: {e}")
+            logger.error(f"Error checking reported members: {e}")
 
         return reported_members
 
@@ -95,7 +98,7 @@ class WeeklyUpdateReminder(commands.Cog):
             role_id = RoleId[role_name].value
             role = guild.get_role(role_id)
             if role is None:
-                print(f"Error: Role not found for {role_name}")
+                logger.error(f"Role not found for {role_name}")
                 return unreported
 
             # Get all members with the role
@@ -105,7 +108,7 @@ class WeeklyUpdateReminder(commands.Cog):
                     unreported.append(member)
 
         except Exception as e:
-            print(f"Error getting unreported members: {e}")
+            logger.error(f"Error getting unreported members: {e}")
 
         return unreported
 
@@ -114,7 +117,7 @@ class WeeklyUpdateReminder(commands.Cog):
         try:
             guild = self.bot.get_guild(GUILD_ID)
             if guild is None:
-                print("Error: Guild not found")
+                logger.error("Guild not found")
                 return
 
             # Check and remind for each group
@@ -122,7 +125,7 @@ class WeeklyUpdateReminder(commands.Cog):
                 channel_id = WeeklyUpdateChannelId[role_name].value
                 channel = guild.get_channel(channel_id)
                 if channel is None:
-                    print(f"Error: Channel not found for {role_name}")
+                    logger.error(f"Channel not found for {role_name}")
                     continue
                 assert isinstance(channel, discord.TextChannel), (
                     "Channel must be a TextChannel"
@@ -143,15 +146,15 @@ class WeeklyUpdateReminder(commands.Cog):
                     await channel.send(
                         f"[提醒] 以下成員尚未回報本週進度，請記得回報：\n{mentions}"
                     )
-                    print(
+                    logger.info(
                         f"Evening reminder sent to {role_name} channel "
                         f"for {len(unreported)} unreported members"
                     )
                 else:
-                    print(f"All members in {role_name} have reported")
+                    logger.info(f"All members in {role_name} have reported")
 
         except Exception as e:
-            print(f"Error sending evening reminder: {e}")
+            logger.error(f"Error sending evening reminder: {e}")
 
 
 async def setup(bot: KumaBot) -> None:
