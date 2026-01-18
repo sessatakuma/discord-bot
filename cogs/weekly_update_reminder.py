@@ -43,15 +43,16 @@ class WeeklyUpdateReminder(commands.Cog):
         """Send morning reminder at 10:00 AM on Monday"""
         try:
             guild = self.bot.get_guild(GUILD_ID)
-            if guild is None:
+            if not isinstance(guild, discord.Guild):
                 logger.error("Guild not found")
                 return
 
             # Send reminder to each group's weekly update channel
-            for role_name in ["design", "tech", "content"]:
-                channel_id = WeeklyUpdateChannelId[role_name].value
+            for channel_enum in WeeklyUpdateChannelId:
+                role_name = channel_enum.name
+                channel_id = channel_enum.value
                 channel = guild.get_channel(channel_id)
-                if channel is None:
+                if not isinstance(channel, discord.TextChannel):
                     logger.error(f"Channel not found for {role_name}")
                     continue
                 assert isinstance(channel, discord.TextChannel), (
@@ -76,7 +77,7 @@ class WeeklyUpdateReminder(commands.Cog):
             start_of_day_utc = start_of_day_taiwan.astimezone(timezone.utc)
 
             # Get all messages from today
-            async for message in channel.history(after=start_of_day_utc, limit=None):
+            async for message in channel.history(after=start_of_day_utc, limit=1000):
                 # Only count non-bot messages
                 if not message.author.bot and isinstance(
                     message.author, discord.Member
@@ -97,14 +98,14 @@ class WeeklyUpdateReminder(commands.Cog):
         try:
             role_id = RoleId[role_name].value
             role = guild.get_role(role_id)
-            if role is None:
+            if not isinstance(role, discord.Role):
                 logger.error(f"Role not found for {role_name}")
                 return unreported
 
             # Get all members with the role
             for member in role.members:
-                # Check if member hasn't reported (not in reported_members set)
-                if member.id not in reported_members:
+                # Add to unreported list if member hasn't reported and is not a bot
+                if member.id not in reported_members and not member.bot:
                     unreported.append(member)
 
         except Exception as e:
@@ -116,20 +117,18 @@ class WeeklyUpdateReminder(commands.Cog):
         """Send evening reminder from 6 PM to 11 PM, tagging unreported members"""
         try:
             guild = self.bot.get_guild(GUILD_ID)
-            if guild is None:
+            if not isinstance(guild, discord.Guild):
                 logger.error("Guild not found")
                 return
 
             # Check and remind for each group
-            for role_name in ["design", "tech", "content"]:
-                channel_id = WeeklyUpdateChannelId[role_name].value
+            for channel_enum in WeeklyUpdateChannelId:
+                role_name = channel_enum.name
+                channel_id = channel_enum.value
                 channel = guild.get_channel(channel_id)
-                if channel is None:
+                if not isinstance(channel, discord.TextChannel):
                     logger.error(f"Channel not found for {role_name}")
                     continue
-                assert isinstance(channel, discord.TextChannel), (
-                    "Channel must be a TextChannel"
-                )
 
                 # Check who has reported today
                 reported_members = await self._check_reported_members(channel)
