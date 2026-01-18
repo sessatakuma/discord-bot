@@ -34,6 +34,12 @@ class MeetingChannelId(Enum):
     content = 1377278272676692111
 
 
+class WeeklyUpdateChannelId(Enum):
+    design = 1429082664769552497
+    tech = 1429028509904408597
+    content = 1429506864948838584
+
+
 # Cogs to load
 COGS = [
     "cogs.dict_query",
@@ -43,4 +49,5 @@ COGS = [
     "cogs.event_reminder",
     "cogs.meeting_reminder",
     "cogs.task_reminder",
+    "cogs.weekly_update_reminder",
 ]
