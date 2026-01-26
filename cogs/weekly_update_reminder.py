@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from logging import getLogger
 from zoneinfo import ZoneInfo
@@ -5,11 +6,19 @@ from zoneinfo import ZoneInfo
 import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
+from rich.logging import RichHandler
 
 from config.settings import GUILD_ID, RoleId, WeeklyUpdateChannelId
 from core.bot_core import KumaBot
 
 logger = getLogger(__name__)
+
+logging.basicConfig(
+    format="%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.DEBUG,
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
 
 TAIWAN_TZ = ZoneInfo("Asia/Taipei")
 
@@ -79,9 +88,11 @@ class WeeklyUpdateReminder(commands.Cog):
             # Get all messages from today
             async for message in channel.history(after=start_of_day_utc, limit=1000):
                 # Only count non-bot messages
-                if not message.author.bot and isinstance(
-                    message.author, discord.Member
-                ):
+                logger.debug(
+                    f"Checking message from {message.author} at {message.created_at}, "
+                    f"with content: {message.content}"
+                )
+                if not message.author.bot:
                     reported_members.add(message.author.id)
 
         except Exception as e:
@@ -98,12 +109,18 @@ class WeeklyUpdateReminder(commands.Cog):
         try:
             role_id = RoleId[role_name].value
             role = guild.get_role(role_id)
+
             if not isinstance(role, discord.Role):
                 logger.error(f"Role not found for {role_name}")
                 return unreported
 
-            # Get all members with the role
+            if len(role.members) == 0:
+                logger.error(f"No members found with role {role_name}")
+                return unreported
+
             for member in role.members:
+                logger.debug(f"Checking member {member} with ID {member.id}")
+
                 # Add to unreported list if member hasn't reported and is not a bot
                 if member.id not in reported_members and not member.bot:
                     unreported.append(member)
