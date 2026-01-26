@@ -8,8 +8,11 @@ from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageDraw import ImageDraw as ImageDrawType
 
+from config.logging import setup_logging
 from config.settings import API_URL
 from core.bot_core import KumaBot
+
+logger = setup_logging(__name__)
 
 
 async def mark_text_handler(
@@ -61,7 +64,7 @@ async def get_furigana_via_api(
                             result.append((surface, furigana, accent))
                     return result
     except Exception as e:
-        print("API error:", e)
+        logger.error(f"API error: {e}")
     return []
 
 
@@ -307,7 +310,7 @@ async def text2png(
 ) -> tuple[bool, io.BufferedIOBase | None]:
     result = await get_furigana_via_api(query, session)
     if not result:
-        print("API 讀取失敗")
+        logger.error("API 讀取失敗")
         return False, None
 
     # Execute image generation in thread pool
@@ -341,7 +344,7 @@ async def mark(
         if len(text) < 2:
             await interaction.response.send_message("請輸入要產生圖片的文字。")
             return
-        print("Generating image for:", text)
+        logger.info(f"Generating image for: {text}")
         await interaction.response.defer()
         success, buffer = await text2png(text, session, draw_box=False)
         assert success is True, "Image generation failed"
@@ -350,5 +353,5 @@ async def mark(
             file=discord.File(buffer, filename="marked_text.png")
         )
     except Exception as e:
-        print(f"Error in mark function: {e}")
+        logger.error(f"Error in mark function: {e}")
         await interaction.followup.send(f"發生錯誤：{e}")

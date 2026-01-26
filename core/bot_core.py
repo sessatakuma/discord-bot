@@ -4,7 +4,10 @@ import aiohttp
 from discord.ext import commands
 
 from config.googlesheet import get_user_mapping
+from config.logging import setup_logging
 from config.settings import COGS
+
+logger = setup_logging(__name__)
 
 
 class KumaBot(commands.Bot):
@@ -21,21 +24,21 @@ class KumaBot(commands.Bot):
             try:
                 await self.load_extension(cog_name)
             except Exception as e:
-                print(f"❌ Failed to load {cog_name}: {e}")
+                logger.error(f"❌ Failed to load {cog_name}: {e}")
                 failed_cogs.append(cog_name)
 
         if not failed_cogs:
-            print("✅ All cogs loaded successfully")
+            logger.info("✅ All cogs loaded successfully")
         else:
-            print(f"⚠️ {len(failed_cogs)} cog(s) failed to load")
+            logger.error(f"⚠️ {len(failed_cogs)} cog(s) failed to load")
 
         # Get aiohttp session
         self.session = aiohttp.ClientSession()
-        print("🌐 Aiohttp session created")
+        logger.info("🌐 Aiohttp session created")
 
         # Get user mapping
         self.user_mapping = await get_user_mapping()
-        print(f"✅ {len(self.user_mapping)} users mapping loaded")
+        logger.info(f"✅ {len(self.user_mapping)} users mapping loaded")
 
     async def close(self) -> None:
         """Override close to ensure aiohttp session is closed"""

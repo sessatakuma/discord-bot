@@ -4,8 +4,10 @@ from dotenv import load_dotenv
 from google.oauth2 import service_account
 from gspread_asyncio import AsyncioGspreadClientManager
 
+from config.logging import setup_logging
 from config.settings import RoleId
 
+logger = setup_logging(__name__)
 load_dotenv()
 
 GOOGLESHEET_ID: str = os.getenv("GOOGLESHEET_ID", "")
@@ -55,7 +57,7 @@ async def get_user_mapping() -> dict[str, dict[str, str]]:
         result = await worksheet.get_values(range_name="F:H")
         result = result[1:]
     except Exception as e:
-        print(f"⚠️ Error accessing Google Sheet for user mapping: {e}")
+        logger.warning(f"Error accessing Google Sheet for user mapping: {e}")
         result = []
     # Create a mapping for users
     user_mapping = {}

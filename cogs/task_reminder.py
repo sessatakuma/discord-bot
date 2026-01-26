@@ -9,8 +9,10 @@ from config.googlesheet import (
     GOOGLESHEET_ID,
     ROLEID_MAP,
 )
+from config.logging import setup_logging
 from core.bot_core import KumaBot
 
+logger = setup_logging(__name__)
 MAX_TIME = datetime.datetime.strptime("9999/12/31", "%Y/%m/%d")
 
 
@@ -27,7 +29,7 @@ class TaskReminder(commands.Cog):
             worksheet = await ss.get_worksheet(2)
             result = await worksheet.get_all_values()
         except Exception as e:
-            print(f"Error accessing Google Sheet: {e}")
+            logger.error(f"Error accessing Google Sheet: {e}")
             return False
 
         self.title = result[0]
@@ -138,7 +140,7 @@ class TaskReminder(commands.Cog):
             await interaction.response.send_message(message, ephemeral=True)
 
         except Exception as e:
-            print(f"Error in get_user_todo_tasks command: {e}")
+            logger.error(f"Error in get_user_todo_tasks command: {e}")
             await interaction.response.send_message(f"發生錯誤：{e}", ephemeral=True)
 
 
