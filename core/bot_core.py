@@ -24,25 +24,24 @@ class KumaBot(commands.Bot):
             try:
                 await self.load_extension(cog_name)
             except Exception as e:
-                logger.error(f"❌ Failed to load {cog_name}: {e}")
+                logger.error(f"Failed to load {cog_name}: {e}")
                 failed_cogs.append(cog_name)
 
         if not failed_cogs:
-            logger.info("✅ All cogs loaded successfully")
+            logger.info("All cogs loaded successfully")
         else:
-            logger.error(f"⚠️ {len(failed_cogs)} cog(s) failed to load")
+            logger.error(f"{len(failed_cogs)} cog(s) failed to load")
 
         # Get aiohttp session
         self.session = aiohttp.ClientSession()
-        logger.info("🌐 Aiohttp session created")
-
+        logger.info("Aiohttp session created")
         # Get user mapping
         self.user_mapping = await get_user_mapping()
-        logger.info(f"✅ {len(self.user_mapping)} users mapping loaded")
+        logger.info(f"{len(self.user_mapping)} users mapping loaded")
 
     async def close(self) -> None:
         """Override close to ensure aiohttp session is closed"""
         if self.session:
             await self.session.close()
-            print("🌐 Aiohttp session closed")
+            print("Aiohttp session closed")
         await super().close()

@@ -10,26 +10,26 @@ logger = setup_logging(__name__)
 def setup_events(bot: KumaBot) -> None:
     @bot.event
     async def on_ready() -> None:
-        logger.info(f"🐻‍❄️ {bot.user} is now online!")
+        logger.info(f"{bot.user} is now online!")
 
         # Sync slash commands
         try:
             synced = await bot.tree.sync()
-            logger.info(f"✅ Successfully synced {len(synced)} commands")
+            logger.info(f"Successfully synced {len(synced)} commands")
         except Exception as e:
-            logger.error(f"❌ Slash command sync failed: {e}")
+            logger.error(f"Slash command sync failed: {e}")
 
         # Setup event scheduler
         event_reminder: EventReminder = bot.get_cog("EventReminder")  # type: ignore
         if event_reminder:
-            logger.info("🔔 Setting up event scheduler...")
+            logger.info("Setting up event scheduler...")
             await event_reminder.update()
         else:
             logger.warning(
-                "⚠️ EventReminder cog not found, skipping event scheduler setup"
+                "EventReminder cog not found, skipping event scheduler setup"
             )
 
-        logger.info("💡 Press Ctrl+C to stop the bot")
+        logger.info("Press Ctrl+C to stop the bot")
 
     @bot.event
     async def on_scheduled_event_create(event: ScheduledEvent) -> None:

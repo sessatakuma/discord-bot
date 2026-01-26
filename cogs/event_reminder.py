@@ -84,10 +84,8 @@ class EventReminder(commands.Cog):
                 self.scheduled_events = sorted(
                     self.scheduled_events, key=lambda e: e.start_time
                 )
-                logger.info(
-                    f"📅 Scheduled events: \
-                        {[event.name for event in self.scheduled_events]}"
-                )
+                event_list = [event.name for event in self.scheduled_events]
+                logger.info(f"Scheduled events:{event_list}")
 
             except Exception as e:
                 logger.error(f"Failed to fetch scheduled events: {e}")
