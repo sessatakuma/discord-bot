@@ -7,6 +7,7 @@ from core.events import setup_events
 
 if __name__ == "__main__":
     intents = discord.Intents.default()
+    intents.members = True
     bot = KumaBot(command_prefix="!", intents=intents)
 
     setup_events(bot)
