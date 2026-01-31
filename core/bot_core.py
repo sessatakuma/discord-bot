@@ -43,5 +43,5 @@ class KumaBot(commands.Bot):
         """Override close to ensure aiohttp session is closed"""
         if self.session:
             await self.session.close()
-            print("Aiohttp session closed")
+            logger.info("Aiohttp session closed")
         await super().close()

@@ -1,5 +1,4 @@
 import logging
-from logging import getLogger
 
 from rich.logging import RichHandler
 
@@ -23,4 +22,4 @@ def setup_logging(name: str = __name__) -> logging.Logger:
         handlers=[RichHandler(rich_tracebacks=True)],
         force=True,
     )
-    return getLogger(name)
+    return logging.getLogger(name)

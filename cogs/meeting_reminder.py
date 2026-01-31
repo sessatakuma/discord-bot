@@ -49,8 +49,8 @@ class MeetingReminder(commands.Cog):
                 channel = self.bot.get_channel(GeneralChannelId.staff.value)
                 assert isinstance(channel, discord.TextChannel)
                 await channel.send(
-                    f"""<@&{RoleId.staff.value}> ⏰ 今天已經是本月最後一週了！
-                    請尚未填寫的人填寫下個月的開會時間表，謝謝！"""
+                    f"<@&{RoleId.staff.value}> ⏰ 今天已經是本月最後一週了！"
+                    "請尚未填寫的人填寫下個月的開會時間表，謝謝！"
                 )
         except Exception as e:
             logger.error(f"Error sending meeting reminder: {e}")
