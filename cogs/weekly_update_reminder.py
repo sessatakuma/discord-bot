@@ -1,24 +1,15 @@
-import logging
 from datetime import datetime, timezone
-from logging import getLogger
 from zoneinfo import ZoneInfo
 
 import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
-from rich.logging import RichHandler
 
+from config.logging import setup_logging
 from config.settings import GUILD_ID, RoleId, WeeklyUpdateChannelId
 from core.bot_core import KumaBot
 
-logger = getLogger(__name__)
-
-logging.basicConfig(
-    format="%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.DEBUG,
-    handlers=[RichHandler(rich_tracebacks=True)],
-)
+logger = setup_logging(__name__)
 
 TAIWAN_TZ = ZoneInfo("Asia/Taipei")
 

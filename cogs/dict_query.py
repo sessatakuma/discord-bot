@@ -5,8 +5,11 @@ import aiohttp
 from discord import Interaction, app_commands
 from discord.ext import commands
 
+from config.logging import setup_logging
 from config.settings import API_URL
 from core.bot_core import KumaBot
+
+logger = setup_logging(__name__)
 
 
 async def dict_query_handler(
@@ -88,7 +91,7 @@ async def fetch_dict_link(
                 else:
                     return f"❌ **{word}**: 查詢失敗，錯誤代碼 {response.status}"
         except Exception as e:
-            print(f"dict_query error for '{word}': {e}")
+            logger.error(f"dict_query error for '{word}': {e}")
             return f"❌ **{word}**: 發生錯誤"
 
     try:
@@ -105,4 +108,4 @@ async def fetch_dict_link(
             await interaction.followup.send("❌ 找不到結果")
     except Exception as e:
         await interaction.followup.send("❌ 發生錯誤，請稍後再試")
-        print(f"dict_query general error: {e}")
+        logger.error(f"dict_query general error: {e}")

@@ -8,8 +8,11 @@ from discord import app_commands
 from discord.channel import StageChannel, VoiceChannel
 from discord.ext import commands
 
+from config.logging import setup_logging
 from config.settings import GUILD_ID, GeneralChannelId, MeetingChannelId, RoleId
 from core.bot_core import KumaBot
+
+logger = setup_logging(__name__)
 
 
 def get_role_name(channel: VoiceChannel | StageChannel | None) -> str:
@@ -38,7 +41,7 @@ class EventReminder(commands.Cog):
     async def cog_load(self) -> None:
         """Initialize scheduler when cog is loaded"""
         if self.bot.is_ready():
-            print("🔔 Setting up event scheduler...")
+            logger.info("Setting up event scheduler...")
             await self.update()
 
     async def cog_unload(self) -> None:
@@ -81,13 +84,11 @@ class EventReminder(commands.Cog):
                 self.scheduled_events = sorted(
                     self.scheduled_events, key=lambda e: e.start_time
                 )
-                print(
-                    f"📅 Scheduled events: \
-                        {[event.name for event in self.scheduled_events]}"
-                )
+                event_list = [event.name for event in self.scheduled_events]
+                logger.info(f"Scheduled events:{event_list}")
 
             except Exception as e:
-                print(f"Failed to fetch scheduled events: {e}")
+                logger.error(f"Failed to fetch scheduled events: {e}")
                 return
 
     def _schedule_event_reminders(
@@ -140,7 +141,7 @@ class EventReminder(commands.Cog):
         try:
             await channel.send(f"<@&{role_id}> [{event.name}]({event.url}) {message}")
         except Exception as e:
-            print(f"Failed to send reminder for event {event.name}: {e}")
+            logger.error(f"Failed to send reminder for event {event.name}: {e}")
 
     # /event list
     @event_cmd.command(name="list", description="查詢已排程提醒的活動")
@@ -175,7 +176,7 @@ class EventReminder(commands.Cog):
             await interaction.response.send_message(msg, ephemeral=True)
 
         except Exception as e:
-            print(f"Error in event_list command: {e}")
+            logger.error(f"Error in event_list command: {e}")
             await interaction.response.send_message(f"發生錯誤：{e}", ephemeral=True)
 
     # /event today
@@ -214,7 +215,7 @@ class EventReminder(commands.Cog):
             await interaction.response.send_message(msg, ephemeral=True)
 
         except Exception as e:
-            print(f"Error in event_today command: {e}")
+            logger.error(f"Error in event_today command: {e}")
             await interaction.response.send_message(f"發生錯誤：{e}", ephemeral=True)
 
 

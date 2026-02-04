@@ -1,9 +1,12 @@
 import discord
 
+from config.logging import setup_logging
 from config.settings import TOKEN
 from core.bot_core import KumaBot
 from core.context_menu import setup_context_menu
 from core.events import setup_events
+
+logger = setup_logging(__name__)
 
 if __name__ == "__main__":
     intents = discord.Intents.default()
@@ -15,4 +18,4 @@ if __name__ == "__main__":
     try:
         bot.run(TOKEN)
     finally:
-        print("✅ Bot has been shut down")
+        logger.info("Bot has been shut down")

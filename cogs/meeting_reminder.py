@@ -4,8 +4,11 @@ import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
 
+from config.logging import setup_logging
 from config.settings import GeneralChannelId, RoleId
 from core.bot_core import KumaBot
+
+logger = setup_logging(__name__)
 
 
 def is_first_day_of_last_week() -> bool:
@@ -46,11 +49,11 @@ class MeetingReminder(commands.Cog):
                 channel = self.bot.get_channel(GeneralChannelId.staff.value)
                 assert isinstance(channel, discord.TextChannel)
                 await channel.send(
-                    f"<@&{RoleId.staff.value}> ⏰ 本月最後一週了！ \
-                        請尚未填寫的人填寫下個月的開會時間表，謝謝！"
+                    f"<@&{RoleId.staff.value}> ⏰ 今天已經是本月最後一週了！"
+                    "請尚未填寫的人填寫下個月的開會時間表，謝謝！"
                 )
         except Exception as e:
-            print(f"Error sending meeting reminder: {e}")
+            logger.error(f"Error sending meeting reminder: {e}")
 
     # /meeting remind
     # @meeting_cmd.command(name="remind", description="提醒填寫下個月開會時間表")
